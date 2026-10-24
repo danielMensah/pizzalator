@@ -1,6 +1,5 @@
 // Tokens from mockups/design-system/project/tokens.json.
 
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -92,61 +91,82 @@ class PizzaColors extends ThemeExtension<PizzaColors> {
 
   // ponytail: theme switch snaps instead of cross-fading; per-field Color.lerp if it ever looks bad.
   @override
-  PizzaColors lerp(PizzaColors? other, double t) => t < 0.5 ? this : (other ?? this);
+  PizzaColors lerp(PizzaColors? other, double t) =>
+      t < 0.5 ? this : (other ?? this);
 }
 
 @immutable
 class PizzaText extends ThemeExtension<PizzaText> {
   PizzaText(PizzaColors c)
-      : displayXl = _display(54, -0.03, c.ink),
-        displayLg = _display(44, -0.02, c.ink),
-        displayMd = _display(34, -0.02, c.ink),
-        h1 = _display(30, -0.02, c.ink, height: 1.1),
-        h2 = _display(20, 0, c.ink, height: 1.2),
-        body = _sans(15, 22, FontWeight.w400, c.ink),
-        bodyStrong = _sans(15, 22, FontWeight.w600, c.ink),
-        bodySm = _sans(13, 19, FontWeight.w400, c.inkSoft),
-        caption = _sans(12, 16, FontWeight.w500, c.inkMuted),
-        label = _sans(11, 16, FontWeight.w600, c.inkMuted, letterSpacing: 0.88),
-        number = _sans(15, 20, FontWeight.w700, c.ink),
-        button = _sans(14, 20, FontWeight.w600, c.ink);
+    : displayXl = _display(54, -0.03, c.ink),
+      displayLg = _display(44, -0.02, c.ink),
+      displayMd = _display(34, -0.02, c.ink),
+      h1 = _display(30, -0.02, c.ink, height: 1.1),
+      h2 = _display(20, 0, c.ink, height: 1.2),
+      body = _sans(15, 22, FontWeight.w400, c.ink),
+      bodyStrong = _sans(15, 22, FontWeight.w600, c.ink),
+      bodySm = _sans(13, 19, FontWeight.w400, c.inkSoft),
+      caption = _sans(12, 16, FontWeight.w500, c.inkMuted),
+      label = _sans(11, 16, FontWeight.w600, c.inkMuted, letterSpacing: 0.88),
+      captionRegular = _sans(12, 16, FontWeight.w400, c.inkMuted),
+      number = _sans(15, 20, FontWeight.w700, c.ink),
+      numberMuted = _sans(15, 20, FontWeight.w500, c.inkMuted),
+      unit = _sans(15, 22, FontWeight.w500, c.inkMuted),
+      button = _sans(14, 20, FontWeight.w600, c.ink),
+      buttonCta = _sans(16, 24, FontWeight.w700, c.ink),
+      buttonMd = _sans(14, 20, FontWeight.w500, c.ink),
+      segment = _sans(13, 19, FontWeight.w500, c.inkSoft);
 
   final TextStyle displayXl, displayLg, displayMd, h1, h2;
-  final TextStyle body, bodyStrong, bodySm, caption, label, number, button;
+  final TextStyle body, bodyStrong, bodySm, caption, captionRegular, label;
+  final TextStyle number, numberMuted, unit, button, buttonCta, buttonMd;
+
+  /// Segmented control and chip labels.
+  final TextStyle segment;
 
   static const _tabular = [FontFeature.tabularFigures()];
 
-  static TextStyle _display(double size, double tracking, Color color, {double height = 1}) =>
-      GoogleFonts.bricolageGrotesque(
-        fontSize: size,
-        height: height,
-        fontWeight: FontWeight.w700,
-        letterSpacing: size * tracking,
-        color: color,
-        fontFeatures: _tabular,
-      );
+  static TextStyle _display(
+    double size,
+    double tracking,
+    Color color, {
+    double height = 1,
+  }) => GoogleFonts.bricolageGrotesque(
+    fontSize: size,
+    height: height,
+    fontWeight: FontWeight.w700,
+    letterSpacing: size * tracking,
+    color: color,
+    fontFeatures: _tabular,
+  );
 
-  static TextStyle _sans(double size, double lineHeight, FontWeight weight, Color color,
-          {double letterSpacing = 0}) =>
-      GoogleFonts.inter(
-        fontSize: size,
-        height: lineHeight / size,
-        fontWeight: weight,
-        letterSpacing: letterSpacing,
-        color: color,
-        fontFeatures: _tabular,
-      );
+  static TextStyle _sans(
+    double size,
+    double lineHeight,
+    FontWeight weight,
+    Color color, {
+    double letterSpacing = 0,
+  }) => GoogleFonts.inter(
+    fontSize: size,
+    height: lineHeight / size,
+    fontWeight: weight,
+    letterSpacing: letterSpacing,
+    color: color,
+    fontFeatures: _tabular,
+  );
 
   @override
   PizzaText copyWith() => this;
 
   @override
-  PizzaText lerp(PizzaText? other, double t) => t < 0.5 ? this : (other ?? this);
+  PizzaText lerp(PizzaText? other, double t) =>
+      t < 0.5 ? this : (other ?? this);
 }
 
 ThemeData pizzaTheme(Brightness brightness) {
-  final c = brightness == Brightness.dark ? PizzaColors.dark : PizzaColors.light;
-  final t = PizzaText(c);
+  final c = brightness == Brightness.dark
+      ? PizzaColors.dark
+      : PizzaColors.light;
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
@@ -160,24 +180,11 @@ ThemeData pizzaTheme(Brightness brightness) {
       onSurface: c.ink,
       error: c.alert,
     ),
-    textTheme: GoogleFonts.interTextTheme().apply(bodyColor: c.ink, displayColor: c.ink),
-    cardTheme: CardThemeData(
-      color: c.surface,
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: c.line),
-      ),
+    textTheme: GoogleFonts.interTextTheme().apply(
+      bodyColor: c.ink,
+      displayColor: c.ink,
     ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        textStyle: t.button.copyWith(fontSize: 16, fontWeight: FontWeight.w700),
-      ),
-    ),
-    extensions: [c, t],
+    extensions: [c, PizzaText(c)],
   );
 }
 

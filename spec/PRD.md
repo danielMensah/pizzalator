@@ -71,7 +71,7 @@ All quantities are baker's percentages (flour = 100%). Total flour mass is the p
 | Sugar / malt | 0 | 1.5 sugar | 1 sugar | 0.5 malt | 1 sugar | 1 sugar |
 | IDY reference (24 h @ 20 °C) | 0.10 | 0.30 | 0.60 | 0.30 | 0.50 | 0.30 |
 | Default plan | 2 h room + 24 h fridge | 1 h room + 48 h fridge | 1 h room + 24 h fridge | 1 h room + 48 h fridge | 1 h room + 24 h fridge | 1 h room + 48 h fridge |
-| Weight rule | 0.34 g/cm² (250 g / 30 cm) | 0.37 g/cm² (TF 0.085 oz/in²; 14" ≈ 370 g) | 0.457 g/cm² (2.95 g/in²; 10×14" ≈ 413 g) | 0.55 g/cm² (30×40 cm ≈ 660 g) | 0.50 g/cm² (33×46 cm ≈ 760 g) | 0.26 g/cm² (TF 0.06; 12" ≈ 190 g) |
+| Weight rule | 0.354 g/cm² (250 g / 30 cm) | 0.37 g/cm² (TF 0.085 oz/in²; 14" ≈ 370 g) | 0.457 g/cm² (2.95 g/in²; 10×14" ≈ 413 g) | 0.55 g/cm² (30×40 cm ≈ 660 g) | 0.50 g/cm² (33×46 cm ≈ 760 g) | 0.26 g/cm² (TF 0.06; 12" ≈ 190 g) |
 | Thickness presets | thin / std / thick = ×0.85 / 1.0 / 1.15 | same | 2.75 / 2.95 / 3.15 g/in² | same ×0.85/1/1.15 | same | same |
 | Flour target | W 250–320, 11.5–13% | 12.5–14% | 12.5–14% | 13–14.5% (W 320+) | 12–13.5% | 11.5–12.5% |
 | Shape | round | round | rect pan | rect pan | rect pan | round, rolled |
@@ -165,7 +165,7 @@ Preferment carve-out: `final_flour = total_flour − pref_flour`, `final_water =
 - Ingredient tables (preferment if any, final dough): flour per type, water, salt, yeast/starter, oil, sugar/malt. Totals, ball/pan weight, ball count.
 - Effective hydration and effective protein.
 - Water temperature to hit 24 °C final dough temp: `T_water = 3 × 24 − T_flour − T_room − friction` (friction 2 °C hand, 6 °C mixer). Preferment plans use 4-factor form.
-- Schedule: preferment → mix → bulk → ball → fridge → warm-up (take out N h before) → bake. Absolute times if user enters target bake time.
+- Schedule: preferment → mix + routine → bulk → fridge (in the container) → divide into balls → warm-up (N h before bake) → bake, the order the §4.7 routine runs. Absolute times if user enters target bake time.
 - Bake card (§4.4).
 - Tip card (oven suggestions, each with one-tap apply).
 - Warnings.
@@ -188,14 +188,14 @@ After mixing, the dough goes through a fixed sequence of hands-on steps and cove
 | 7 | Knead on the counter | active | 10 min | Timed active step |
 | 8 | Rest on counter, covered | rest | 30 min | |
 | 9 | Stretch, fold, shape one ball | active | ~5 min | Folding traps air; into the container |
-| 10 | Bulk in container | rest | 4 h same day, or fridge hours from the fermentation plan | Pulled from §4.5 plan |
+| 10 | Bulk in container | rest | Room bulk hours, then (cold plan) fridge hours from the fermentation plan | Pulled from §4.5 plan; the fridge part is its own timer |
 | 11 | Divide into balls | active | ~5 min | Then final proof per plan |
 
 **Behaviour**
 - Steps are `{name, kind: active | rest, minutes, note}`. Add, remove, reorder, edit minutes. Reset to default.
 - A rest timer ends → local notification + sound/vibration → the next step shows with its instruction. Rest-to-active transitions wait for a "Done, next" tap (hands are busy); active-to-rest transitions start the rest timer on the tap. Option: auto-start everything.
 - Active steps with a duration (knead 10 min) run a count-up or count-down timer too; untimed active steps just show the instruction.
-- Step 10's duration is bound to the fermentation plan: same-day = bulk hours; cold plan = fridge hours, and the notification says "take out of fridge".
+- Step 10's duration is bound to the fermentation plan: room bulk hours, then on a cold plan a fridge rest in the container. The room-bulk end says "into the fridge", the fridge end "take out of fridge"; dividing follows, then the plan's warm-up.
 - Timers survive app background/kill: store `stepIndex` + `endsAt` timestamp, reschedule local notifications on launch. Elapsed-time catch-up when reopened.
 - Skip, +5 min, pause. Progress bar for the whole routine with total time remaining and projected "balls ready at HH:MM".
 - Routine start can be triggered from the Recipe screen; the schedule (§4.6) absorbs the routine's total so the "mix at" time is correct.
@@ -270,6 +270,8 @@ Each step is usable on its own; stop when it is good enough for your kitchen.
 ## 11. Open items
 
 - Yeast table values: fit from Craig's chart thread (need the actual numbers; pizzamaking.com thread msg 271967).
+  Until then the calc uses the Ferment mockup model: activity doubles every 8 °C, plans count as at least 2 equivalent hours, IDY clamped to 0.03–1.2 %.
+- Detroit (0.60) and Sicilian (0.50) IDY references put their default 1 h + 24 h fridge plans over the 1.2 % clamp (≈ 2.1 % and 1.7 %): confirm or lower them against the fitted table.
 - Roman/Sicilian/thin weight rules and hydration ranges: confirm against your own pans after first bakes.
 - Sourdough timing model: none in v1; revisit if starter bakes log "under/over" repeatedly.
 - Whether thickness presets should be per-style named (e.g. Detroit "classic / thick") or generic.
