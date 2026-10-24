@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator bake log</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+@keyframes collapse{from{max-height:220px;opacity:1}to{max-height:0;opacity:0;padding-top:0;padding-bottom:0;margin-bottom:-14px}}
+.chip{flex:0 0 auto;height:40px;padding:0 14px;border-radius:20px;border:1px solid #3A302B;background:#201A17;color:#CFC4B8;font:500 13px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s,border-color .25s}
+.chip.on{background:#F3EDE4;border-color:#F3EDE4;color:#15110F;animation:pop .3s cubic-bezier(.2,.8,.3,1.3)}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:14px;animation:rise .45s ease both}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.photo{width:72px;height:72px;border-radius:14px;flex:0 0 auto;background:linear-gradient(135deg,#3A2A1E,#5A3B22 50%,#3A2A1E);position:relative;overflow:hidden}
+.photo::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);background-size:200px 100%;animation:shimmer 2.4s linear infinite}
+.tag{font:500 11px Inter;padding:4px 8px;border-radius:8px;background:#2E2622;color:#CFC4B8}
+.tag.bad{background:#3A2222;color:#F0A3A3}
+.tag.good{background:#1F3331;color:#8FD3CB}
+.hint{background:#1C2A2A;border:1px solid #2F5B57;border-radius:20px;padding:14px;animation:rise .45s ease both;overflow:hidden}
+.hint.gone{animation:collapse .45s ease forwards}
+.btn{height:44px;border-radius:12px;border:1px solid #3A302B;background:#201A17;color:#F3EDE4;font:600 13px Inter,system-ui;cursor:pointer;padding:0 14px;transition:background .2s,color .2s,transform .15s}
+.btn.pri{background:#5BA8A0;border-color:#5BA8A0;color:#15110F}
+.btn:active{transform:scale(.96)}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.fab{position:absolute;right:20px;bottom:28px;width:60px;height:60px;border-radius:20px;background:#E8863A;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(232,134,58,.35);transition:transform .2s;text-decoration:none}
+.fab:hover{transform:translateY(-2px) scale(1.04)}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <header style="padding: 56px 20px 12px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="Main.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Calculator</a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end">
+      <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Bake log</h1>
+      <div class="lbl">{{count}} bakes</div>
+    </div>
+  </header>
+
+  <div style="display: flex; gap: 8px; overflow-x: auto; padding: 4px 20px 10px; scrollbar-width: none">
+    <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+      <button class="{{f.cls}}" onClick="{{f.pick}}">{{f.name}}</button>
+    </sc-for>
+  </div>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 110px">
+
+    <sc-if value="{{showHint}}" hint-placeholder-val="{{true}}">
+      <div class="{{hintCls}}" role="note">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8FD3CB" stroke-width="1.8" aria-hidden="true"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M5 19l3-3M16 8l3-3"/></svg>
+          <div style="flex: 1">
+            <div class="lbl" style="color: #8FD3CB">Calibration hint · Friday NY</div>
+            <p style="margin: 4px 0 10px; font-size: 13px; line-height: 1.45; color: #E9DFD2">Two bakes logged "too wet" with UK strong. Suggest hydration 63.5% → 61.5% on this recipe.</p>
+            <div style="display: flex; gap: 8px">
+              <button class="btn pri" onClick="{{applyHint}}">Apply −2 pp</button>
+              <button class="btn" onClick="{{dismissHint}}">Not now</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{entries}}" as="e" hint-placeholder-count="4">
+      <a class="card" href="LogEntry.dc.html" style="{{e.delay}}; display: flex; gap: 12px; text-decoration: none; color: inherit">
+        <div class="photo" aria-hidden="true"></div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <span style="font-weight: 600">{{e.name}}</span>
+            <span style="font-size: 12px; color: #A89F93">{{e.date}}</span>
+          </div>
+          <div style="display: flex; gap: 2px" aria-label="{{e.ratingLabel}}" role="img">
+            <sc-for list="{{e.stars}}" as="s" hint-placeholder-count="5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="{{s.fill}}" stroke="{{s.fill}}" stroke-width="1.5" aria-hidden="true"><path d="M12 3l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17.3 6.2 20.5l1.4-6.4L2.7 9.7l6.5-.7z"/></svg>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap">
+            <sc-for list="{{e.tags}}" as="t" hint-placeholder-count="3">
+              <span class="{{t.cls}}">{{t.text}}</span>
+            </sc-for>
+          </div>
+        </div>
+      </a>
+    </sc-for>
+  </div>
+
+  <a class="fab" href="LogEntry.dc.html" aria-label="Log a bake">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#15110F" stroke-width="2.4" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const ENTRIES = [
+  {name:'Friday NY',style:'ny',date:'Fri 17 Oct',rating:3,tags:[['too wet','bad'],['proof right','good'],['crust right','good']]},
+  {name:'Detroit, pepperoni cups',style:'detroit',date:'Sun 12 Oct',rating:5,tags:[['dough right','good'],['crust right','good'],['bottom right','good']]},
+  {name:'Friday NY',style:'ny',date:'Fri 10 Oct',rating:3,tags:[['too wet','bad'],['under-proofed','bad'],['pale','bad']]},
+  {name:'Neapolitan, steel test',style:'neapolitan',date:'Sat 4 Oct',rating:2,tags:[['dough right','good'],['pale','bad'],['bottom soggy','bad']]},
+  {name:'Roman teglia, 30×40',style:'roman',date:'Sun 28 Sep',rating:4,tags:[['dough right','good'],['open crumb','good']]}
+];
+const FILTERS=[['all','All'],['ny','New York'],['detroit','Detroit'],['neapolitan','Neapolitan'],['roman','Roman']];
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={filter:'all',hint:'show'}; }
+  renderVals(){
+    const st=this.state;
+    const list=ENTRIES.filter(e=>st.filter==='all'||e.style===st.filter);
+    return {
+      count: list.length,
+      filters: FILTERS.map(([k,n])=>({name:n,cls:'chip'+(k===st.filter?' on':''),pick:()=>this.setState({filter:k})})),
+      showHint: st.hint!=='gone' && (st.filter==='all'||st.filter==='ny'),
+      hintCls: 'hint'+(st.hint==='leaving'?' gone':''),
+      applyHint:()=>{ this.setState({hint:'leaving'}); this._t=setTimeout(()=>this.setState({hint:'gone'}),450); },
+      dismissHint:()=>{ this.setState({hint:'leaving'}); this._t=setTimeout(()=>this.setState({hint:'gone'}),450); },
+      entries: list.map((e,i)=>({
+        name:e.name, date:e.date, delay:'animation-delay:'+(i*0.06)+'s',
+        ratingLabel: e.rating+' of 5 stars',
+        stars:[1,2,3,4,5].map(n=>({fill:n<=e.rating?'#F3A25B':'#3A302B'})),
+        tags:e.tags.map(([text,k])=>({text,cls:'tag '+k}))
+      }))
+    };
+  }
+  componentWillUnmount(){ clearTimeout(this._t); }
+}
+</script>
+</body>
+</html>

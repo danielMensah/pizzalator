@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator recipe and bake card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes check{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.seg{display:flex;background:#201A17;border:1px solid #3A302B;border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;height:40px;border:0;border-radius:10px;background:transparent;color:#A89F93;font:500 13px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s}
+.seg button.on{background:#2E2622;color:#F3EDE4;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:16px;animation:rise .4s ease both}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.ing{display:flex;align-items:center;gap:12px;width:100%;height:48px;border:0;border-bottom:1px solid #2E2622;background:transparent;color:#F3EDE4;font:400 15px Inter,system-ui;cursor:pointer;text-align:left;padding:0;transition:opacity .25s}
+.ing:last-child{border-bottom:0}
+.ing.done{opacity:.45}
+.ing.done .nm{text-decoration:line-through}
+.box{width:24px;height:24px;border-radius:8px;border:1.5px solid #3A302B;display:flex;align-items:center;justify-content:center;transition:background .2s,border-color .2s}
+.ing.done .box{background:#E8863A;border-color:#E8863A;animation:check .3s cubic-bezier(.2,.8,.3,1.3)}
+.ing.done .box svg{opacity:1}
+.box svg{opacity:0;transition:opacity .2s}
+.tl{display:flex;gap:12px;position:relative}
+.tl .dot{width:12px;height:12px;border-radius:50%;background:#3A302B;margin-top:4px;flex:0 0 auto;transition:background .3s}
+.tl.on .dot{background:#E8863A;box-shadow:0 0 0 4px rgba(232,134,58,.2);animation:pulse 1.6s ease infinite}
+.tl.past .dot{background:#5BA8A0}
+.line{width:2px;background:#2E2622;margin-left:5px;flex:0 0 auto}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.btn{height:48px;border-radius:14px;border:1px solid #3A302B;background:#201A17;color:#F3EDE4;font:600 14px Inter,system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;flex:1;transition:background .2s,color .2s,border-color .2s}
+.btn.ok{background:#5BA8A0;border-color:#5BA8A0;color:#15110F}
+.btn.pri{background:#E8863A;border-color:#E8863A;color:#15110F}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 56px 20px 12px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="Ferment.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Fermentation</a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end">
+      <div>
+        <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Friday NY</h1>
+        <div style="font-size: 13px; color: #A89F93; margin-top: 2px">New York · 2 × 35 cm · UK strong · steel</div>
+      </div>
+      <div style="text-align: right">
+        <div style="font: 700 28px 'Bricolage Grotesque', Inter, sans-serif; color: #F3A25B; letter-spacing: -.02em">63.5<span style="font-size: 14px; color: #A89F93">%</span></div>
+        <div class="lbl">hydration</div>
+      </div>
+    </div>
+  </header>
+
+  <div style="padding: 0 20px 12px">
+    <div class="seg" role="tablist" aria-label="Recipe sections">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+        <button class="{{t.cls}}" role="tab" onClick="{{t.pick}}">{{t.name}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 20px">
+
+    <sc-if value="{{tabIng}}" hint-placeholder-val="{{true}}">
+      <div class="card" style="padding-top: 10px; padding-bottom: 6px">
+        <div style="display: flex; justify-content: space-between; align-items: center; height: 36px"><div class="lbl">Final dough</div><div class="lbl">{{doneCount}} / 6 added</div></div>
+        <sc-for list="{{ings}}" as="i" hint-placeholder-count="6">
+          <button class="{{i.cls}}" onClick="{{i.pick}}">
+            <span class="box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#15110F" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+            <span class="nm" style="flex: 1">{{i.name}}</span>
+            <span style="font-size: 12px; color: #A89F93">{{i.pct}}</span>
+            <span class="num" style="width: 64px; text-align: right">{{i.g}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div class="card" style="animation-delay: .08s; display: flex; flex-direction: column; gap: 8px">
+        <div class="lbl">Water temperature</div>
+        <div style="display: flex; align-items: baseline; gap: 8px"><span style="font: 700 28px 'Bricolage Grotesque', Inter, sans-serif; color: #F3EDE4">21 °C</span><span style="font-size: 13px; color: #A89F93">for 24 °C dough · flour 20 °C · room 21 °C · hand mix</span></div>
+      </div>
+      <div class="card" style="animation-delay: .12s; display: flex; justify-content: space-between; align-items: center">
+        <div><div class="lbl">Yield</div><div class="num" style="font-size: 18px; margin-top: 2px">2 balls · 370 g</div></div>
+        <div style="text-align: right"><div class="lbl">Total dough</div><div class="num" style="font-size: 18px; margin-top: 2px">742 g</div></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{tabSch}}" hint-placeholder-val="{{false}}">
+      <div class="card" style="display: flex; flex-direction: column; gap: 0">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px">
+          <div class="lbl">Bake Friday 19:00</div>
+          <a class="btn pri" href="Timers.dc.html" style="flex: 0 0 auto; height: 36px; padding: 0 12px; font-size: 12px; text-decoration: none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Start dough timers</a>
+        </div>
+        <sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+          <div class="{{s.cls}}">
+            <div style="display: flex; flex-direction: column; align-items: center"><span class="dot"></span><span class="line" style="{{s.lineStyle}}"></span></div>
+            <div style="flex: 1; padding-bottom: 18px">
+              <div style="display: flex; justify-content: space-between"><span style="font-weight: 600">{{s.name}}</span><span class="num" style="color: #A89F93; font-weight: 500">{{s.when}}</span></div>
+              <div style="font-size: 13px; color: #A89F93; margin-top: 2px; line-height: 1.4">{{s.note}}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{tabBake}}" hint-placeholder-val="{{false}}">
+      <div class="card" style="display: flex; flex-direction: column; gap: 12px; border-color: #6B4420; background: #2A1F14">
+        <div style="display: flex; align-items: center; gap: 10px">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F3A25B" stroke-width="1.8" aria-hidden="true"><path d="M12 3c-3 4-6 6-6 10a6 6 0 0 0 12 0c0-4-3-6-6-10z"/></svg>
+          <div><div class="lbl" style="color: #F3A25B">Home oven · steel</div><div style="font-weight: 600; margin-top: 2px">Max 275 °C · 2nd rack from top</div></div>
+        </div>
+        <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 1.45; color: #E9DFD2">
+          <li>Preheat steel 45–60 min at max, fan off.</li>
+          <li>Stretch to 35 cm on semolina. Top light: NY sauce is thin.</li>
+          <li>Launch. Bake 5–7 min until the rim blisters.</li>
+          <li>Switch to grill for the last 1–2 min. Watch the rim, not the clock.</li>
+          <li>Rest 60 s on a rack before cutting.</li>
+        </ol>
+      </div>
+      <div class="card" style="animation-delay: .08s; display: flex; flex-direction: column; gap: 8px">
+        <div class="lbl">Why these numbers</div>
+        <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #CFC4B8">UK strong at 13% protein lifts NY hydration 0.5 pp to 63.5%. Sugar 1.5% and oil 2.5% give colour at 275 °C that a lean dough would not get. Steel browns the base in time, so no need to lower hydration.</p>
+      </div>
+    </sc-if>
+
+    <div style="display: flex; gap: 10px">
+      <button class="{{copyCls}}" onClick="{{copy}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5h10"/></svg>{{copyLabel}}
+      </button>
+      <a class="btn pri" href="LogEntry.dc.html" style="text-decoration: none">Log this bake</a>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const INGS = [['UK strong white','100%','500 g'],['Water','63.5%','318 g'],['Salt','2.2%','11.0 g'],['Olive oil','2.5%','12.5 g'],['Sugar','1.5%','7.5 g'],['Instant yeast','0.47%','2.35 g']];
+const STEPS = [
+  ['Mix + dough routine','Wed 14:30','Mix, rest 30, fold, rest 15, fold, rest 15, knead 10, rest 30, ball up. Timers run it: 1 h 55.'],
+  ['Bulk in container','Wed 16:30','1 h at 21 °C, covered.'],
+  ['Divide + fridge','Wed 17:30','2 × 370 g balls in oiled tubs. 48 h at 4 °C.'],
+  ['Take out','Fri 17:00','2 h on the counter: balls reach 15 °C and relax.'],
+  ['Preheat','Fri 18:00','Steel at max, 60 min.'],
+  ['Bake','Fri 19:00','5–7 min, grill to finish.']
+];
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={tab:'ing',done:{},step:1,copied:false}; }
+  renderVals(){
+    const st=this.state;
+    const tabs=[['ing','Ingredients'],['sch','Schedule'],['bake','Bake card']];
+    const doneCount=Object.values(st.done).filter(Boolean).length;
+    return {
+      tabs: tabs.map(([k,n])=>({name:n,cls:k===st.tab?'on':'',pick:()=>this.setState({tab:k})})),
+      tabIng: st.tab==='ing', tabSch: st.tab==='sch', tabBake: st.tab==='bake',
+      ings: INGS.map(([name,pct,g],i)=>({name,pct,g,cls:'ing'+(st.done[i]?' done':''),pick:()=>this.setState({done:Object.assign({},st.done,{[i]:!st.done[i]})})})),
+      doneCount,
+      steps: STEPS.map(([name,when,note],i)=>({name,when,note,cls:'tl'+(i===st.step?' on':i<st.step?' past':''),lineStyle:i===STEPS.length-1?'display:none':'flex:1'})),
+      advance:()=>this.setState({step:Math.min(STEPS.length-1,st.step+1)}),
+      copyCls:'btn'+(st.copied?' ok':''), copyLabel: st.copied?'Copied':'Copy as text',
+      copy:()=>{ this.setState({copied:true}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({copied:false}),1500); }
+    };
+  }
+  componentWillUnmount(){ clearTimeout(this._t); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator fermentation plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes bubble{0%{transform:translateY(0) scale(1);opacity:.8}100%{transform:translateY(-26px) scale(.4);opacity:0}}
+.chip{flex:0 0 auto;height:44px;padding:0 16px;border-radius:22px;border:1px solid #3A302B;background:#201A17;color:#CFC4B8;font:500 14px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s,border-color .25s}
+.chip.on{background:#E8863A;border-color:#E8863A;color:#15110F;animation:pop .3s cubic-bezier(.2,.8,.3,1.3)}
+.seg{display:flex;background:#201A17;border:1px solid #3A302B;border-radius:14px;padding:4px;gap:4px}
+.seg button{flex:1;height:40px;border:0;border-radius:10px;background:transparent;color:#A89F93;font:500 13px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s}
+.seg button.on{background:#2E2622;color:#F3EDE4;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:16px;animation:rise .45s ease both}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.step{width:44px;height:44px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:600 20px Inter;cursor:pointer;transition:background .15s,transform .15s}
+.step:active{transform:scale(.92);background:#2E2622}
+.track{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#2E2622}
+.track div{transition:flex-grow .5s cubic-bezier(.2,.8,.2,1);height:100%}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border-radius:18px;background:#E8863A;color:#15110F;font:700 16px Inter,system-ui;text-decoration:none;transition:transform .2s,filter .2s}
+.cta:hover{filter:brightness(1.08);transform:translateY(-1px);color:#15110F}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+.bub{position:absolute;bottom:6px;width:6px;height:6px;border-radius:50%;background:#F3A25B;animation:bubble 1.6s ease-out infinite}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 56px 20px 12px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="Main.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Calculator</a>
+    <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Fermentation</h1>
+  </header>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 20px">
+
+    <div class="card" style="display: flex; flex-direction: column; gap: 12px">
+      <div class="lbl">Leavening</div>
+      <div class="seg" role="group" aria-label="Leavening type">
+        <sc-for list="{{leavens}}" as="l" hint-placeholder-count="4">
+          <button class="{{l.cls}}" onClick="{{l.pick}}">{{l.name}}</button>
+        </sc-for>
+      </div>
+      <sc-if value="{{showPref}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; gap: 8px">
+          <sc-for list="{{prefs}}" as="p" hint-placeholder-count="3">
+            <button class="{{p.cls}}" style="flex: 1; padding: 0" onClick="{{p.pick}}">{{p.name}}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <div class="card" style="animation-delay: .08s; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <div class="lbl">Schedule</div>
+        <div class="num" style="color: #F3A25B">{{totalH}} h total</div>
+      </div>
+      <div class="track" aria-hidden="true">
+        <div style="{{roomStyle}}; background: #F3A25B"></div>
+        <div style="{{fridgeStyle}}; background: #5BA8A0"></div>
+        <div style="{{warmStyle}}; background: #C9A227"></div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #F3A25B"></span>
+        <div style="flex: 1"><div style="font-weight: 600">Room bulk</div><div style="font-size: 12px; color: #A89F93">{{roomT}} °C · yeast works fast</div></div>
+        <button class="step" aria-label="Less room time" onClick="{{roomDown}}">−</button>
+        <span class="num" style="width: 36px; text-align: center">{{roomH}}h</span>
+        <button class="step" aria-label="More room time" onClick="{{roomUp}}">+</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #5BA8A0"></span>
+        <div style="flex: 1"><div style="font-weight: 600">Fridge</div><div style="font-size: 12px; color: #A89F93">{{fridgeT}} °C · flavour, slow rise</div></div>
+        <button class="step" aria-label="Less fridge time" onClick="{{fridgeDown}}">−</button>
+        <span class="num" style="width: 36px; text-align: center">{{fridgeH}}h</span>
+        <button class="step" aria-label="More fridge time" onClick="{{fridgeUp}}">+</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #C9A227"></span>
+        <div style="flex: 1"><div style="font-weight: 600">Warm up before bake</div><div style="font-size: 12px; color: #A89F93">balls reach 15 °C</div></div>
+        <button class="step" aria-label="Less warm up" onClick="{{warmDown}}">−</button>
+        <span class="num" style="width: 36px; text-align: center">{{warmH}}h</span>
+        <button class="step" aria-label="More warm up" onClick="{{warmUp}}">+</button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <label for="roomT" class="lbl" style="width: 110px">Room temp</label>
+        <input id="roomT" type="range" min="16" max="30" value="{{roomT}}" onChange="{{setRoomT}}" style="flex: 1; accent-color: #E8863A; height: 44px; margin: 0">
+        <span class="num" style="width: 44px; text-align: right">{{roomT}}°</span>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: .16s; display: flex; flex-direction: column; gap: 8px; border-color: #3A302B; position: relative; overflow: hidden">
+      <div class="lbl">{{yeastLabel}}</div>
+      <div style="display: flex; align-items: baseline; gap: 8px">
+        <div style="font: 700 44px 'Bricolage Grotesque', Inter, sans-serif; font-variant-numeric: tabular-nums; color: #F3A25B; letter-spacing: -.02em">{{yeastShown}}</div>
+        <div style="font: 500 16px Inter; color: #A89F93">g · {{yeastPct}}% of flour</div>
+      </div>
+      <p style="margin: 0; font-size: 13px; line-height: 1.45; color: #CFC4B8">{{yeastNote}}</p>
+      <sc-if value="{{hasPrefTable}}" hint-placeholder-val="{{true}}">
+        <div style="margin-top: 6px; border-top: 1px solid #2E2622; padding-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 13px">
+          <div style="color: #A89F93">{{prefName}}</div><div class="num" style="text-align: right">{{prefFlour}} g flour</div><div class="num" style="text-align: right">{{prefWater}} g water</div>
+          <div style="color: #A89F93">Final dough</div><div class="num" style="text-align: right">{{finFlour}} g flour</div><div class="num" style="text-align: right">{{finWater}} g water</div>
+        </div>
+      </sc-if>
+      <span class="bub" style="left: 14%; animation-delay: 0s" aria-hidden="true"></span>
+      <span class="bub" style="left: 38%; animation-delay: .5s" aria-hidden="true"></span>
+      <span class="bub" style="left: 70%; animation-delay: 1s" aria-hidden="true"></span>
+    </div>
+
+    <a class="cta" href="Recipe.dc.html">Build recipe
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"flourG":{"editor":"int","default":500,"min":100,"max":5000,"unit":"g"},"$preview":{"width":390,"height":844}}'>
+const LEAVENS = [['idy','Instant'],['ady','Active dry'],['fresh','Fresh'],['sour','Sourdough']];
+const PREFS = [['none','No preferment'],['poolish','Poolish'],['biga','Biga']];
+const REF_IDY = 0.30; // NY reference, 24 h @ 20 °C
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = {leaven:'idy',pref:'none',roomH:1,fridgeH:48,warmH:2,roomT:21,fridgeT:4,shown:0}; }
+  compute(){
+    const st=this.state;
+    const q=(T)=>Math.pow(2,(T-20)/8);
+    const eq = st.roomH*q(st.roomT) + st.fridgeH*q(st.fridgeT) + st.warmH*q(st.roomT);
+    let idy = Math.min(1.2, Math.max(0.03, REF_IDY*24/Math.max(eq,2)));
+    if (st.roomH===0) idy*=1.3;
+    const mult = {idy:1,ady:1.25,fresh:3,sour:0}[st.leaven];
+    if (st.pref!=='none') idy*=0.5;
+    const pct = st.leaven==='sour'?15:idy*mult;
+    return {pct, grams:(this.props.flourG??500)*pct/100};
+  }
+  tweenTo(t){
+    if (this._raf) cancelAnimationFrame(this._raf);
+    const from=this.state.shown, t0=performance.now();
+    const step=(now)=>{const k=Math.min(1,(now-t0)/450),e=1-Math.pow(1-k,3);this.setState({shown:from+(t-from)*e});if(k<1)this._raf=requestAnimationFrame(step);};
+    this._raf=requestAnimationFrame(step);
+  }
+  componentDidMount(){ this.tweenTo(this.compute().grams); }
+  componentDidUpdate(_,prev){ if(['leaven','pref','roomH','fridgeH','warmH','roomT'].some(k=>prev[k]!==this.state[k])) this.tweenTo(this.compute().grams); }
+  componentWillUnmount(){ if(this._raf) cancelAnimationFrame(this._raf); }
+  renderVals(){
+    const st=this.state, c=this.compute(), F=this.props.flourG??500;
+    const total=st.roomH+st.fridgeH+st.warmH;
+    const inc=(k,d,min,max)=>()=>this.setState({[k]:Math.min(max,Math.max(min,st[k]+d))});
+    const sour=st.leaven==='sour';
+    const prefShare = st.pref==='poolish'?0.3: st.pref==='biga'?0.5: sour?0.15:0;
+    const prefHyd = st.pref==='poolish'?1: st.pref==='biga'?0.5: sour?1:0;
+    const prefFlour = sour ? F*0.15/2 : F*prefShare;
+    const prefWater = prefFlour*prefHyd;
+    const totalWater = F*0.63;
+    let yeastNote;
+    if (sour) yeastNote='Starter at 100% hydration. No time model in v1: adjust from your bake log.';
+    else if (st.pref==='poolish') yeastNote='Poolish: 30% of flour, equal water, 0.1% IDY of its flour, 12–16 h at 20 °C. Final-dough yeast halved.';
+    else if (st.pref==='biga') yeastNote='Biga: 50% of flour at 50% hydration, 0.7% IDY of its flour, 16–24 h at 17 °C. Final-dough yeast halved.';
+    else if (st.roomH===0) yeastNote='Fridge-only plan: +30% margin applied, the community model under-doses cold ferments.';
+    else yeastNote='Fitted to the pizzamaking.com yeast model. Tune with the kitchen knob after two bakes.';
+    return {
+      leavens: LEAVENS.map(([k,n])=>({name:n,cls:k===st.leaven?'on':'',pick:()=>this.setState({leaven:k,pref:k==='sour'?'none':st.pref})})),
+      prefs: PREFS.map(([k,n])=>({name:n,cls:'chip'+(k===st.pref?' on':''),pick:()=>this.setState({pref:k})})),
+      showPref: !sour,
+      totalH: total,
+      roomStyle:'flex-grow:'+Math.max(st.roomH,0.01), fridgeStyle:'flex-grow:'+Math.max(st.fridgeH,0.01), warmStyle:'flex-grow:'+Math.max(st.warmH,0.01),
+      roomH:st.roomH, fridgeH:st.fridgeH, warmH:st.warmH, roomT:st.roomT, fridgeT:st.fridgeT,
+      roomUp:inc('roomH',1,0,24), roomDown:inc('roomH',-1,0,24),
+      fridgeUp:inc('fridgeH',12,0,96), fridgeDown:inc('fridgeH',-12,0,96),
+      warmUp:inc('warmH',1,0,4), warmDown:inc('warmH',-1,0,4),
+      setRoomT:(e)=>this.setState({roomT:+e.target.value}),
+      yeastLabel: sour?'Sourdough starter':{idy:'Instant dry yeast',ady:'Active dry yeast',fresh:'Fresh yeast'}[st.leaven],
+      yeastShown: sour? st.shown.toFixed(0) : st.shown.toFixed(2),
+      yeastPct: c.pct.toFixed(sour?0:2),
+      yeastNote,
+      hasPrefTable: st.pref!=='none'||sour,
+      prefName: sour?'Starter':st.pref==='poolish'?'Poolish':'Biga',
+      prefFlour: Math.round(prefFlour), prefWater: Math.round(prefWater),
+      finFlour: Math.round(F-prefFlour), finWater: Math.round(totalWater-prefWater)
+    };
+  }
+}
+</script>
+</body>
+</html>

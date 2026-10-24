@@ -1,0 +1,24 @@
+<!-- @dsCard group="Feedback" height=260 subtitle="resting, hands-on, done" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:var(--ground);font-family:var(--font-sans);color:var(--ink);padding:16px;display:flex;gap:24px;align-items:center}
+  .ring{position:relative;width:200px;height:200px}
+  .ring svg{display:block}
+  .track{fill:none;stroke:var(--surface-raised);stroke-width:14}
+  .arc{fill:none;stroke-width:14;stroke-linecap:round}
+  .in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+  .lbl{font:600 11px var(--font-sans);letter-spacing:.08em;text-transform:uppercase}
+  .clock{font:700 44px var(--font-display);letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+  .nm{font:600 13px var(--font-sans);margin-top:4px}
+</style>
+</head>
+<body>
+  <div class="ring"><svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true"><circle class="track" cx="100" cy="100" r="88"/><circle class="arc" cx="100" cy="100" r="88" stroke="var(--ember)" stroke-dasharray="552.9" stroke-dashoffset="138" transform="rotate(-90 100 100)"/></svg><div class="in"><span class="lbl" style="color:var(--ember)">Resting</span><span class="clock">22:30</span><span class="nm">Rest in bowl</span></div></div>
+  <div class="ring"><svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true"><circle class="track" cx="100" cy="100" r="88"/><circle class="arc" cx="100" cy="100" r="88" stroke="var(--wheat)" stroke-dasharray="552.9" stroke-dashoffset="330" transform="rotate(-90 100 100)"/></svg><div class="in"><span class="lbl" style="color:var(--wheat)">Hands on</span><span class="clock">04:12</span><span class="nm">Knead</span></div></div>
+  <div class="ring"><svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true"><circle class="track" cx="100" cy="100" r="88"/><circle class="arc" cx="100" cy="100" r="88" stroke="var(--sage)" stroke-dasharray="552.9" stroke-dashoffset="552.9" transform="rotate(-90 100 100)"/></svg><div class="in"><span class="lbl" style="color:var(--sage)">Rest over</span><span class="clock">00:00</span><span class="nm">Next: Fold</span></div></div>
+</body>
+</html>

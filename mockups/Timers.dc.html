@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator dough routine timers</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes ringIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes ding{0%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}100%{transform:rotate(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,134,58,0)}50%{box-shadow:0 0 0 10px rgba(232,134,58,.18)}}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.ring{animation:ringIn .5s cubic-bezier(.2,.8,.2,1) both}
+.ring.rest{animation:ringIn .5s cubic-bezier(.2,.8,.2,1) both, breathe 4s ease-in-out 0.5s infinite}
+.ring.done svg{animation:ding .6s ease}
+.arc{transition:stroke-dashoffset .9s linear,stroke .4s}
+.btn{height:52px;border-radius:16px;border:1px solid #3A302B;background:#201A17;color:#F3EDE4;font:600 14px Inter,system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s,color .2s,transform .15s,filter .2s;padding:0 16px}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:#E8863A;border-color:#E8863A;color:#15110F;flex:1}
+.btn.pri.go{animation:pulse 1.6s ease infinite}
+.btn.pri:hover{filter:brightness(1.08)}
+.step{display:flex;align-items:center;gap:12px;height:50px;padding:0 4px;border-radius:12px;transition:background .3s,opacity .3s}
+.step.now{background:#2A1F14}
+.step.past{opacity:.45}
+.step .ic{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;transition:background .3s}
+.step.past .ic{background:#1F3331}
+.step.now .ic{background:#E8863A}
+.step .ic.rest{background:#2E2622}
+.step .ic.do{background:#2E2622}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.bar{height:6px;border-radius:3px;background:#2E2622;overflow:hidden}
+.fill{height:100%;border-radius:3px;background:#5BA8A0;transition:width .9s linear}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 56px 20px 8px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; justify-content: space-between; align-items: center">
+      <a class="back" href="Recipe.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Recipe</a>
+      <a class="btn" href="Routine.dc.html" style="height: 36px; padding: 0 12px; font-size: 12px; text-decoration: none">Edit routine</a>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end">
+      <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Dough routine</h1>
+      <div style="text-align: right"><div class="num" style="color: #8FD3CB">{{readyAt}}</div><div class="lbl">balls ready</div></div>
+    </div>
+    <div class="bar" aria-hidden="true"><div class="fill" style="{{progStyle}}"></div></div>
+    <div style="display: flex; justify-content: space-between; font: 500 11px Inter; color: #A89F93"><span>Step {{stepNo}} of {{stepCount}}</span><span>{{totalLeft}} left</span></div>
+  </header>
+
+  <div style="padding: 8px 20px 0; display: flex; flex-direction: column; align-items: center; gap: 8px">
+    <div class="{{ringCls}}" style="position: relative; width: 236px; height: 236px">
+      <svg width="236" height="236" viewBox="0 0 236 236" role="img" aria-label="{{ringLabel}}">
+        <circle cx="118" cy="118" r="104" fill="none" stroke="#2E2622" stroke-width="14"/>
+        <circle class="arc" cx="118" cy="118" r="104" fill="none" stroke="{{arcColor}}" stroke-width="14" stroke-linecap="round" stroke-dasharray="653.5" stroke-dashoffset="{{arcOffset}}" transform="rotate(-90 118 118)"/>
+      </svg>
+      <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+        <div class="lbl" style="color: {{arcColor}}">{{kindLabel}}</div>
+        <div style="font: 700 54px 'Bricolage Grotesque', Inter, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.03em; line-height: 1">{{clock}}</div>
+        <div style="font: 600 15px Inter; text-align: center; max-width: 170px; margin-top: 6px">{{stepName}}</div>
+        <div style="font: 400 12px Inter; color: #A89F93; text-align: center; max-width: 180px; margin-top: 2px; line-height: 1.35">{{stepNote}}</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 10px; width: 100%">
+      <button class="btn" aria-label="Add five minutes" onClick="{{plus5}}">+5</button>
+      <button class="{{mainCls}}" onClick="{{mainAct}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="{{mainIcon}}"/></svg>{{mainLabel}}
+      </button>
+      <button class="btn" onClick="{{skip}}">Skip</button>
+    </div>
+  </div>
+
+  <div class="scroll" style="flex: 1; min-height: 0; margin: 10px 20px 0; padding-bottom: 20px">
+    <sc-for list="{{steps}}" as="s" hint-placeholder-count="11">
+      <div class="{{s.cls}}">
+        <div class="{{s.icCls}}">
+          <sc-if value="{{s.isRest}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F3EDE4" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></sc-if>
+          <sc-if value="{{s.isDo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F3EDE4" stroke-width="2" aria-hidden="true"><path d="M7 11V7a2 2 0 0 1 4 0v4M11 9V5a2 2 0 0 1 4 0v4M15 10V7a2 2 0 0 1 4 0v6a7 7 0 0 1-14 0v-2a2 2 0 0 1 4 0"/></svg></sc-if>
+        </div>
+        <div style="flex: 1; min-width: 0"><div style="font-weight: 600; font-size: 14px">{{s.name}}</div><div style="font-size: 12px; color: #A89F93">{{s.sub}}</div></div>
+        <div class="num" style="color: #A89F93; font-weight: 500">{{s.dur}}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"demoSpeed":{"editor":"int","default":60,"min":1,"max":600,"section":"Preview"},"$preview":{"width":390,"height":844}}'>
+const ROUTINE = [
+  {name:'Mix all ingredients',kind:'do',min:5,note:'Water, yeast, sugar, flour. Salt and oil after the rest.'},
+  {name:'Rest in bowl, covered',kind:'rest',min:30,note:'Cover with napkins.'},
+  {name:'Fold in bowl 4–6×',kind:'do',min:2,note:'Stretch from the edge, fold to centre, turn.'},
+  {name:'Rest, covered',kind:'rest',min:15,note:''},
+  {name:'Fold in bowl again',kind:'do',min:2,note:''},
+  {name:'Rest, covered',kind:'rest',min:15,note:''},
+  {name:'Knead on the counter',kind:'do',min:10,note:'Timed. Push, fold, quarter turn.'},
+  {name:'Rest on counter, covered',kind:'rest',min:30,note:'Leave it on the surface.'},
+  {name:'Stretch, fold, ball up',kind:'do',min:5,note:'Folding traps air. Into the container.'},
+  {name:'Bulk in container',kind:'rest',min:240,note:'4 h same day. Cold plan: fridge hours from the plan.'},
+  {name:'Divide into balls',kind:'do',min:5,note:'2 × 370 g. Then final proof.'}
+];
+const CIRC = 653.5;
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={i:1,left:30*60,running:true,done:false}; }
+  componentDidMount(){ this._iv=setInterval(()=>this.tick(),1000); }
+  componentWillUnmount(){ clearInterval(this._iv); }
+  tick(){
+    const st=this.state; if(!st.running||st.done) return;
+    const sp=this.props.demoSpeed??60;
+    const left=Math.max(0,st.left-sp);
+    if(left===0){ this.setState({left:0,running:false,done:true}); } else this.setState({left});
+  }
+  goto(i){
+    if(i>=ROUTINE.length){ this.setState({i:ROUTINE.length-1,left:0,running:false,done:true}); return; }
+    const s=ROUTINE[i];
+    this.setState({i,left:s.min*60,running:s.kind==='rest',done:false});
+  }
+  renderVals(){
+    const st=this.state, s=ROUTINE[st.i], total=s.min*60, sp=this.props.demoSpeed??60;
+    const isRest=s.kind==='rest';
+    const mm=Math.floor(st.left/60), ss=st.left%60;
+    const clock = st.left>=3600 ? Math.floor(st.left/3600)+':'+String(mm%60).padStart(2,'0')+':'+String(ss).padStart(2,'0') : String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+    const frac = total? st.left/total : 0;
+    const remainAll = ROUTINE.slice(st.i+1).reduce((a,x)=>a+x.min,0)*60 + st.left;
+    const ready = new Date(Date.now()+remainAll*1000);
+    const hhmm = String(ready.getHours()).padStart(2,'0')+':'+String(ready.getMinutes()).padStart(2,'0');
+    const totalAll = ROUTINE.reduce((a,x)=>a+x.min,0)*60;
+    const prog = 100*(1-remainAll/totalAll);
+    const lastStep = st.i===ROUTINE.length-1;
+    let mainLabel, mainIcon, mainAct, mainCls='btn pri';
+    if (st.done){ mainLabel = lastStep?'Finish':'Done, next step'; mainIcon='M5 12l5 5 9-10'; mainAct=()=>this.goto(st.i+1); mainCls+=' go'; }
+    else if (isRest){ mainLabel = st.running?'Pause':'Resume'; mainIcon = st.running?'M8 5v14M16 5v14':'M7 4l12 8-12 8z'; mainAct=()=>this.setState({running:!st.running}); }
+    else { mainLabel = st.running?'Pause':(st.left===total?'Start '+s.min+' min':'Resume'); mainIcon = st.running?'M8 5v14M16 5v14':'M7 4l12 8-12 8z'; mainAct=()=>this.setState({running:!st.running}); }
+    const fmtDur=(m)=> m>=60? (m/60)+' h' : m+' min';
+    return {
+      readyAt: hhmm, progStyle:'width:'+prog.toFixed(1)+'%', stepNo: st.i+1, stepCount: ROUTINE.length,
+      totalLeft: remainAll>=3600? (remainAll/3600).toFixed(1)+' h' : Math.ceil(remainAll/60)+' min',
+      ringCls:'ring'+(isRest&&st.running?' rest':'')+(st.done?' done':''),
+      ringLabel: s.name+', '+clock+' remaining',
+      arcColor: st.done?'#5BA8A0':(isRest?'#E8863A':'#C9A227'),
+      arcOffset: (CIRC*(1-frac)).toFixed(1),
+      kindLabel: st.done?(isRest?'Rest over':'Step done'):(isRest?'Resting':'Hands on'),
+      clock, stepName:s.name, stepNote: st.done&&!lastStep? 'Next: '+ROUTINE[st.i+1].name : s.note,
+      mainCls, mainLabel, mainIcon, mainAct,
+      plus5:()=>this.setState({left:st.left+300,done:false,running:true}),
+      skip:()=>this.goto(st.i+1),
+      reset:()=>this.goto(0),
+      steps: ROUTINE.map((x,i)=>({
+        name:x.name, dur:fmtDur(x.min), isRest:x.kind==='rest', isDo:x.kind==='do',
+        sub: i<st.i?'done': i===st.i?(x.kind==='rest'?'resting now':'in progress'):(x.kind==='rest'?'covered rest':'hands on'),
+        cls:'step'+(i<st.i?' past':i===st.i?' now':''),
+        icCls:'ic '+x.kind
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

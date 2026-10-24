@@ -1,0 +1,24 @@
+<!-- @dsCard group="Selection" height=120 subtitle="style row (ember) and filter row (ink)" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:var(--ground);font-family:var(--font-sans);padding:16px;display:flex;flex-direction:column;gap:12px}
+  .row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+  .chip{flex:0 0 auto;height:44px;padding:0 16px;border-radius:var(--radius-pill);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-soft);font:500 14px var(--font-sans);cursor:pointer;transition:background .25s,color .25s,border-color .25s}
+  .chip.on{background:var(--ember);border-color:var(--ember);color:var(--on-ember)}
+  .chip.sm{height:40px;font-size:13px;padding:0 14px}
+  .chip.sm.on{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+</style>
+</head>
+<body>
+  <div class="row">
+    <button class="chip">Neapolitan</button><button class="chip on">New York</button><button class="chip">Detroit</button><button class="chip">Roman teglia</button><button class="chip">Sicilian</button>
+  </div>
+  <div class="row">
+    <button class="chip sm on">All</button><button class="chip sm">New York</button><button class="chip sm">Detroit</button><button class="chip sm">Neapolitan</button>
+  </div>
+</body>
+</html>

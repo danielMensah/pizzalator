@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator routine editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes out{to{opacity:0;transform:translateX(40px);height:0;margin:0;padding:0}}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,16px)}15%{opacity:1;transform:translate(-50%,0)}85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.chip{flex:0 0 auto;height:40px;padding:0 14px;border-radius:20px;border:1px solid #3A302B;background:#201A17;color:#CFC4B8;font:500 13px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s,border-color .25s}
+.chip.on{background:#F3EDE4;border-color:#F3EDE4;color:#15110F;animation:pop .3s cubic-bezier(.2,.8,.3,1.3)}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:10px 14px;animation:rise .4s ease both}
+.st{display:flex;align-items:center;gap:10px;height:60px;border-bottom:1px solid #2E2622;transition:background .2s}
+.st:last-child{border-bottom:0}
+.st.gone{animation:out .35s ease forwards}
+.grip{width:18px;color:#5A4F47;display:flex;flex-direction:column;gap:3px;align-items:center;cursor:grab}
+.grip span{width:14px;height:2px;background:currentColor;border-radius:1px}
+.kind{width:34px;height:34px;border-radius:10px;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,transform .15s;flex:0 0 auto}
+.kind.rest{background:#3A2A1E}
+.kind.do{background:#2E2622}
+.kind:active{transform:scale(.9)}
+.step{width:34px;height:34px;border-radius:10px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:600 18px Inter;cursor:pointer;transition:background .15s,transform .15s;flex:0 0 auto}
+.step:active{transform:scale(.9);background:#2E2622}
+.del{width:34px;height:34px;border-radius:10px;border:0;background:transparent;color:#5A4F47;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .2s;flex:0 0 auto}
+.del:hover{color:#F0A3A3}
+.btn{height:48px;border-radius:14px;border:1px solid #3A302B;background:#201A17;color:#F3EDE4;font:600 14px Inter,system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;transition:background .2s,color .2s,transform .15s,filter .2s;text-decoration:none}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:#E8863A;border-color:#E8863A;color:#15110F}
+.btn.pri:hover{filter:brightness(1.08);color:#15110F}
+.btn.ok{background:#5BA8A0;border-color:#5BA8A0;color:#15110F}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+.toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);background:#F3EDE4;color:#15110F;font:600 13px Inter;padding:10px 16px;border-radius:12px;animation:toast 2s ease forwards;white-space:nowrap}
+input[type=text]{flex:1;height:44px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:600 14px Inter,system-ui;padding:0 12px;outline:none;min-width:0}
+input[type=text]:focus{border-color:#E8863A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <header style="padding: 56px 20px 10px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="Timers.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Timers</a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end">
+      <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Routine</h1>
+      <div style="text-align: right"><div class="num" style="color: #F3A25B">{{total}}</div><div class="lbl">hands-on + rests</div></div>
+    </div>
+  </header>
+
+  <div style="display: flex; gap: 8px; overflow-x: auto; padding: 4px 20px 10px; scrollbar-width: none" role="group" aria-label="Presets">
+    <sc-for list="{{presets}}" as="p" hint-placeholder-count="4">
+      <button class="{{p.cls}}" onClick="{{p.pick}}">{{p.name}}</button>
+    </sc-for>
+  </div>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 4px 20px 24px">
+    <div class="card">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="11">
+        <div class="{{s.cls}}">
+          <div class="grip" aria-hidden="true"><span></span><span></span><span></span></div>
+          <button class="{{s.kindCls}}" aria-label="{{s.kindLabel}}" onClick="{{s.toggleKind}}">
+            <sc-if value="{{s.isRest}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F3A25B" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></sc-if>
+            <sc-if value="{{s.isDo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F3EDE4" stroke-width="2" aria-hidden="true"><path d="M7 11V7a2 2 0 0 1 4 0v4M11 9V5a2 2 0 0 1 4 0v4M15 10V7a2 2 0 0 1 4 0v6a7 7 0 0 1-14 0v-2a2 2 0 0 1 4 0"/></svg></sc-if>
+          </button>
+          <div style="flex: 1; min-width: 0"><div style="font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.name}}</div><div style="font-size: 11px; color: #A89F93">{{s.kindText}}</div></div>
+          <button class="step" aria-label="Less time" onClick="{{s.down}}">−</button>
+          <span class="num" style="width: 44px; text-align: center; font-size: 13px">{{s.dur}}</span>
+          <button class="step" aria-label="More time" onClick="{{s.up}}">+</button>
+          <button class="del" aria-label="Remove step" onClick="{{s.remove}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+      </sc-for>
+      <button class="btn" style="width: 100%; margin: 8px 0 4px; border-style: dashed; height: 44px" onClick="{{addStep}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add step
+      </button>
+    </div>
+
+    <div class="card" style="animation-delay: .06s; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Save as preset</div>
+      <div style="display: flex; gap: 10px">
+        <input type="text" value="{{presetName}}" onChange="{{setName}}" placeholder="e.g. Same-day NY" aria-label="Preset name">
+        <button class="{{saveCls}}" onClick="{{save}}">{{saveLabel}}</button>
+      </div>
+      <button class="btn" style="height: 40px; font-size: 13px" onClick="{{reset}}">Reset to default routine</button>
+    </div>
+  </div>
+
+  <sc-if value="{{showToast}}" hint-placeholder-val="{{false}}">
+    <div class="toast" role="status">{{toastText}}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const DEFAULT = [
+  ['Mix all ingredients','do',5],['Rest in bowl, covered','rest',30],['Fold in bowl 4–6×','do',2],['Rest, covered','rest',15],
+  ['Fold in bowl again','do',2],['Rest, covered','rest',15],['Knead on the counter','do',10],['Rest on counter, covered','rest',30],
+  ['Stretch, fold, ball up','do',5],['Bulk in container','rest',240],['Divide into balls','do',5]
+];
+const COLD = [
+  ['Mix all ingredients','do',5],['Rest in bowl, covered','rest',30],['Fold in bowl 4–6×','do',2],['Rest, covered','rest',15],
+  ['Knead on the counter','do',10],['Rest on counter, covered','rest',30],['Ball up, into tub','do',5],['Fridge (from plan)','rest',2880],['Divide + warm up','do',5]
+];
+const QUICK = [['Mix','do',5],['Rest, covered','rest',20],['Fold','do',2],['Rest','rest',20],['Ball up','do',5],['Bulk','rest',120],['Divide','do',5]];
+let uid = 100;
+const mk = (arr)=>arr.map(([name,kind,min])=>({id:uid++,name,kind,min}));
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={preset:'default',steps:mk(DEFAULT),presets:[['default','My default'],['cold','Cold ferment'],['quick','Quick same-day']],name:'',saved:false,toast:'',removing:null}; }
+  componentWillUnmount(){ clearTimeout(this._t); }
+  load(k){ const src = k==='cold'?COLD:k==='quick'?QUICK:DEFAULT; this.setState({preset:k,steps:mk(src),saved:false}); }
+  toast(t){ this.setState({toast:t}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:''}),2100); }
+  renderVals(){
+    const st=this.state;
+    const totalMin = st.steps.reduce((a,s)=>a+s.min,0);
+    const fmt=(m)=> m>=60? (m%60? Math.floor(m/60)+' h '+(m%60)+' m' : (m/60)+' h') : m+' min';
+    const upd=(id,fn)=>this.setState({steps:st.steps.map(s=>s.id===id?fn(s):s),saved:false});
+    return {
+      total: fmt(totalMin),
+      presets: st.presets.map(([k,n])=>({name:n,cls:'chip'+(k===st.preset?' on':''),pick:()=>this.load(k)})),
+      steps: st.steps.map(s=>{
+        const stepMin = s.min>=120?60: s.min>=30?15:5;
+        return {
+          name:s.name, dur:fmt(s.min), isRest:s.kind==='rest', isDo:s.kind==='do',
+          kindText: s.kind==='rest'?'covered rest · auto':'hands on · tap when done',
+          kindCls:'kind '+s.kind, kindLabel:'Toggle rest or hands-on',
+          cls:'st'+(st.removing===s.id?' gone':''),
+          toggleKind:()=>upd(s.id,x=>Object.assign({},x,{kind:x.kind==='rest'?'do':'rest'})),
+          up:()=>upd(s.id,x=>Object.assign({},x,{min:x.min+stepMin})),
+          down:()=>upd(s.id,x=>Object.assign({},x,{min:Math.max(1,x.min-stepMin)})),
+          remove:()=>{ this.setState({removing:s.id}); clearTimeout(this._r); this._r=setTimeout(()=>this.setState({steps:this.state.steps.filter(x=>x.id!==s.id),removing:null,saved:false}),350); }
+        };
+      }),
+      addStep:()=>this.setState({steps:st.steps.concat([{id:uid++,name:'New step',kind:'rest',min:15}]),saved:false}),
+      presetName: st.name, setName:(e)=>this.setState({name:e.target.value}),
+      saveCls:'btn'+(st.saved?' ok':' pri'), saveLabel: st.saved?'Saved':'Save',
+      save:()=>{ const n = st.name.trim()||'Routine '+(st.presets.length+1); const k='p'+Date.now(); this.setState({presets:st.presets.concat([[k,n]]),preset:k,saved:true,name:''}); this.toast('Preset "'+n+'" saved'); },
+      reset:()=>{ this.load('default'); this.toast('Default routine restored'); },
+      showToast: !!st.toast, toastText: st.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!-- @dsCard group="Lists" height=190 subtitle="past, current, upcoming; editor row" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:var(--ground);font-family:var(--font-sans);color:var(--ink);padding:16px;max-width:358px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-xl);padding:4px 14px}
+  .st{display:flex;align-items:center;gap:12px;height:50px;padding:0 4px;border-radius:12px}
+  .st.now{background:var(--ember-tint)}
+  .st.past{opacity:.45}
+  .ic{width:30px;height:30px;border-radius:var(--radius-sm);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .past .ic{background:var(--sage-tint)}
+  .now .ic{background:var(--ember)}
+  .nm{font-weight:600;font-size:14px}
+  .sub{font-size:12px;color:var(--ink-muted)}
+  .dur{font:500 15px var(--font-sans);color:var(--ink-muted);font-variant-numeric:tabular-nums;margin-left:auto}
+  .step{width:34px;height:34px;border-radius:12px;border:1px solid var(--line-strong);background:var(--ground);color:var(--ink);font:600 18px var(--font-sans)}
+  .del{width:34px;height:34px;border:0;background:transparent;color:var(--ink-muted)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="st past"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div><div class="nm">Rest in bowl, covered</div><div class="sub">done</div></div><span class="dur">30 min</span></div>
+  <div class="st now"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--on-ember)" stroke-width="2" aria-hidden="true"><path d="M7 11V7a2 2 0 0 1 4 0v4M11 9V5a2 2 0 0 1 4 0v4M15 10V7a2 2 0 0 1 4 0v6a7 7 0 0 1-14 0v-2a2 2 0 0 1 4 0"/></svg></div><div><div class="nm">Fold in bowl 4–6×</div><div class="sub">in progress</div></div><span class="dur">2 min</span></div>
+  <div class="st"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div style="flex:1"><div class="nm">Rest, covered</div><div class="sub">covered rest · auto</div></div><button class="step" aria-label="Less">−</button><span class="dur" style="margin:0;width:44px;text-align:center;font-size:13px">15 min</span><button class="step" aria-label="More">+</button><button class="del" aria-label="Remove">✕</button></div>
+</div>
+</body>
+</html>

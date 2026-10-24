@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator flours and label scan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes sheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes scan{0%{top:8%}50%{top:88%}100%{top:8%}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes found{0%{opacity:0;transform:scale(.8)}60%{transform:scale(1.06)}100%{opacity:1;transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:14px;animation:rise .4s ease both}
+.row{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;border:0;border-bottom:1px solid #2E2622;background:transparent;color:#F3EDE4;font:400 14px Inter,system-ui;cursor:pointer;text-align:left;padding:6px 0}
+.row:last-child{border-bottom:0}
+.pill{font:600 11px Inter;padding:4px 8px;border-radius:8px;background:#2E2622;color:#CFC4B8}
+.pill.ww{background:#3A2A1E;color:#F3A25B}
+.pill.mine{background:#1F3331;color:#8FD3CB}
+.btn{height:48px;border-radius:14px;border:1px solid #3A302B;background:#201A17;color:#F3EDE4;font:600 14px Inter,system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;transition:background .2s,color .2s,transform .15s,filter .2s;text-decoration:none}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:#E8863A;border-color:#E8863A;color:#15110F}
+.btn.pri:hover{filter:brightness(1.08);color:#15110F}
+.field{display:flex;align-items:center;gap:10px}
+.field input[type=text],.field input[type=number]{flex:1;height:46px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:600 15px Inter,system-ui;font-variant-numeric:tabular-nums;padding:0 12px;outline:none;min-width:0;transition:border-color .2s,background .4s}
+.field input:focus{border-color:#E8863A}
+.field input.filled{border-color:#5BA8A0;background:#1A2423;animation:found .4s ease}
+.sw{width:50px;height:30px;border-radius:15px;background:#2E2622;border:0;position:relative;cursor:pointer;transition:background .25s;flex:0 0 auto}
+.sw.on{background:#E8863A}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#F3EDE4;transition:transform .25s cubic-bezier(.2,.8,.3,1.2)}
+.sw.on::after{transform:translateX(20px)}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+.sheetWrap{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;flex-direction:column;justify-content:flex-end}
+.sheet{background:#1B1614;border-radius:28px 28px 0 0;padding:14px 20px 28px;display:flex;flex-direction:column;gap:12px;animation:sheet .4s cubic-bezier(.2,.8,.2,1)}
+.view{position:relative;height:280px;border-radius:18px;overflow:hidden;background:#0E0B0A}
+.label{position:absolute;left:34px;top:30px;width:230px;padding:10px 12px;background:#F3EDE4;color:#15110F;font:500 11px Inter;border-radius:4px;transform:rotate(-2deg);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.label table{width:100%;border-collapse:collapse}
+.label td{padding:3px 0;border-bottom:1px solid #D9D2C7}
+.label td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.guide{position:absolute;inset:16px;border:2px solid rgba(243,162,91,.9);border-radius:12px;pointer-events:none}
+.laser{position:absolute;left:16px;right:16px;height:2px;background:#F3A25B;box-shadow:0 0 12px #F3A25B;animation:scan 2.2s ease-in-out infinite}
+.hit{position:absolute;border:2px solid #5BA8A0;border-radius:4px;background:rgba(91,168,160,.18);animation:found .4s ease both}
+.dot{animation:blink 1s ease infinite}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <header style="padding: 56px 20px 12px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="Main.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Calculator</a>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end">
+      <div><div class="lbl">Settings</div><h1 style="margin: 2px 0 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Flours</h1></div>
+      <div class="lbl">{{count}} flours</div>
+    </div>
+  </header>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 24px">
+    <div style="display: flex; gap: 10px">
+      <button class="btn pri" style="flex: 1" onClick="{{openScan}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Scan a bag
+      </button>
+      <button class="btn" style="flex: 1" onClick="{{openManual}}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add by hand
+      </button>
+    </div>
+
+    <div class="card" style="padding-top: 8px; padding-bottom: 4px">
+      <div class="lbl" style="height: 32px; display: flex; align-items: center">My flours</div>
+      <sc-for list="{{mine}}" as="f" hint-placeholder-count="2">
+        <button class="row" onClick="{{f.edit}}">
+          <div style="flex: 1; min-width: 0">
+            <div style="font-weight: 600">{{f.name}}</div>
+            <div style="font-size: 12px; color: #A89F93; margin-top: 2px">{{f.sub}}</div>
+          </div>
+          <span class="{{f.pillCls}}">{{f.pill}}</span>
+          <span class="num">{{f.protein}}%</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div class="card" style="animation-delay: .06s; padding-top: 8px; padding-bottom: 4px">
+      <div class="lbl" style="height: 32px; display: flex; align-items: center">Presets · tap to duplicate and edit</div>
+      <sc-for list="{{presets}}" as="f" hint-placeholder-count="8">
+        <button class="row" onClick="{{f.edit}}">
+          <div style="flex: 1; min-width: 0">
+            <div style="font-weight: 600">{{f.name}}</div>
+            <div style="font-size: 12px; color: #A89F93; margin-top: 2px">{{f.sub}}</div>
+          </div>
+          <span class="{{f.pillCls}}">{{f.pill}}</span>
+          <span class="num">{{f.protein}}%</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #A89F93">Protein per 100 g is the label number that matters: it sets absorption and chew. Fibre tells wholegrain apart (white ≈ 3 g, wholemeal 7–11 g). Bags never print W strength.</p>
+  </div>
+
+  <sc-if value="{{scanning}}" hint-placeholder-val="{{true}}">
+    <div class="sheetWrap">
+      <div class="sheet" role="dialog" aria-label="Scan flour label">
+        <div style="width: 40px; height: 4px; border-radius: 2px; background: #3A302B; margin: 0 auto 4px"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <div><div class="lbl" style="color: #F3A25B">On-device OCR</div><div style="font: 700 20px 'Bricolage Grotesque', Inter, sans-serif">{{scanTitle}}</div></div>
+          <button class="btn" style="height: 36px; padding: 0 12px; font-size: 12px" onClick="{{closeScan}}">Close</button>
+        </div>
+        <div class="view" aria-hidden="true">
+          <div class="label">
+            <div style="font-weight: 700; font-size: 12px; margin-bottom: 4px">NUTRITION · per 100 g</div>
+            <table>
+              <tr><td>Energy</td><td>1480 kJ / 349 kcal</td></tr>
+              <tr><td>Fat</td><td>1.4 g</td></tr>
+              <tr><td>Carbohydrate</td><td>68.5 g</td></tr>
+              <tr><td>&nbsp;&nbsp;of which sugars</td><td>1.5 g</td></tr>
+              <tr><td>Fibre</td><td>3.1 g</td></tr>
+              <tr><td><b>Protein</b></td><td><b>13.7 g</b></td></tr>
+              <tr><td>Salt</td><td>0.01 g</td></tr>
+            </table>
+          </div>
+          <div class="guide"></div>
+          <sc-if value="{{scanLive}}" hint-placeholder-val="{{true}}"><div class="laser"></div></sc-if>
+          <sc-if value="{{scanDone}}" hint-placeholder-val="{{false}}">
+            <div class="hit" style="left: 44px; top: 128px; width: 222px; height: 20px; animation-delay: 0s"></div>
+            <div class="hit" style="left: 44px; top: 146px; width: 222px; height: 20px; animation-delay: .15s"></div>
+          </sc-if>
+          <div style="position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; font: 500 12px Inter; color: #F3EDE4; text-shadow: 0 1px 4px #000"><span class="dot">●</span> {{scanHint}}</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div class="field"><label for="prot" style="font-size: 12px; color: #A89F93; width: 54px">Protein</label><input id="prot" type="number" class="{{inCls}}" value="{{protVal}}" step="0.1"><span style="font-size: 12px; color: #A89F93">g</span></div>
+          <div class="field"><label for="fib" style="font-size: 12px; color: #A89F93; width: 54px">Fibre</label><input id="fib" type="number" class="{{inCls}}" value="{{fibVal}}" step="0.1"><span style="font-size: 12px; color: #A89F93">g</span></div>
+        </div>
+        <div class="field"><label for="fname" style="font-size: 12px; color: #A89F93; width: 54px">Name</label><input id="fname" type="text" value="{{nameVal}}" placeholder="e.g. Sainsbury's strong white"></div>
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div><div style="font-weight: 600; font-size: 14px">Wholegrain</div><div style="font-size: 12px; color: #A89F93">{{wwHint}}</div></div>
+          <button class="{{swCls}}" role="switch" aria-checked="{{wwOn}}" aria-label="Wholegrain" onClick="{{toggleWw}}"></button>
+        </div>
+        <button class="{{saveCls}}" onClick="{{save}}">{{saveLabel}}</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const PRESETS=[['Italian 00 pizza','Caputo Pizzeria class',12.5,false],['Italian 00 weak','supermarket, pasta grade',10.5,false],['Italian 0 / Manitoba','',14,false],['UK plain','',10,false],['UK strong white','Sainsbury’s 13.7, Doves 12–14',13,false],['Very strong / Canadian','Waitrose Canadian 15',14.5,false],['US all-purpose','',11.5,false],['US bread flour','King Arthur 12.7',12.7,false],['Wholemeal','absorbs ~75%',13,true],['Semolina rimacinata','10–20% blend',12.5,false]];
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={mine:[['Sainsbury’s strong white','scanned · fibre 3.1 g',13.7,false],['Marriage’s wholemeal','scanned · fibre 9.2 g',12.9,true]],scan:'off',ww:false,saved:false}; }
+  componentWillUnmount(){ clearTimeout(this._t); }
+  startScan(){ this.setState({scan:'live',saved:false,ww:false}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({scan:'done'}),2600); }
+  renderVals(){
+    const st=this.state, done=st.scan==='done', live=st.scan==='live', manual=st.scan==='manual';
+    const mk=(f,mine)=>({name:f[0],sub:f[1]||(mine?'custom':'preset'),protein:f[2],pill:f[3]?'wholemeal':(mine?'mine':'white'),pillCls:'pill'+(f[3]?' ww':mine?' mine':''),edit:()=>this.setState({scan:'manual',ww:f[3]})});
+    return {
+      count: st.mine.length+PRESETS.length,
+      mine: st.mine.map(f=>mk(f,true)), presets: PRESETS.map(f=>mk(f,false)),
+      openScan:()=>this.startScan(), openManual:()=>this.setState({scan:'manual',saved:false,ww:false}),
+      scanning: st.scan!=='off', scanLive: live, scanDone: done,
+      scanTitle: manual?'New flour':done?'Found the panel':'Point at the nutrition table',
+      scanHint: done?'Protein and fibre read from the per-100 g column':'Hold steady · reading text on device',
+      closeScan:()=>{ clearTimeout(this._t); this.setState({scan:'off'}); },
+      inCls: done?'filled':'', protVal: done?'13.7':'', fibVal: done?'3.1':'', nameVal: done?'Strong white (scanned)':'',
+      wwHint: done?'Fibre 3.1 g → white flour':'Auto-set from fibre ≥ 6 g',
+      swCls:'sw'+(st.ww?' on':''), wwOn: st.ww, toggleWw:()=>this.setState({ww:!st.ww}),
+      saveCls:'btn pri'+(st.saved?' ok':''), saveLabel: st.saved?'Saved to my flours':'Save flour',
+      save:()=>{ const name = done?'Strong white (scanned)':'New flour'; const prot = done?13.7:12.5; this.setState({saved:true,mine:[[name,done?'scanned · fibre 3.1 g':'manual',prot,st.ww]].concat(st.mine)}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({scan:'off'}),700); }
+    };
+  }
+}
+</script>
+</body>
+</html>

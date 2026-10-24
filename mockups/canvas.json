@@ -1,0 +1,30 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-24T13:10:00Z"},
+  "title": "Pizzalator Screens",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "1 · Calculator", "is_interactive": true, "radius": 40},
+    "Ferment.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "2 · Fermentation", "is_interactive": true, "radius": 40},
+    "Recipe.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "3 · Recipe & bake card", "is_interactive": true, "radius": 40},
+    "BakeLog.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "4 · Bake log", "is_interactive": true, "radius": 40},
+    "LogEntry.dc.html": {"x": 1880, "y": 0, "w": 390, "h": 844, "title": "5 · Log a bake", "is_interactive": true, "radius": 40},
+    "Timers.dc.html": {"x": 2350, "y": 0, "w": 390, "h": 844, "title": "6 · Dough routine timers", "is_interactive": true, "radius": 40},
+    "Routine.dc.html": {"x": 2820, "y": 0, "w": 390, "h": 844, "title": "7 · Routine editor & presets", "is_interactive": true, "radius": 40},
+    "Flours.dc.html": {"x": 3290, "y": 0, "w": 390, "h": 844, "title": "8 · Settings · Flours & label scan", "is_interactive": true, "radius": 40}
+  },
+  "order": ["Main.dc.html", "Ferment.dc.html", "Recipe.dc.html", "BakeLog.dc.html", "LogEntry.dc.html", "Timers.dc.html", "Routine.dc.html", "Flours.dc.html"],
+  "notes": {
+    "flow": {"x": 0, "y": -300, "text": "Pizzalator — Android · dark · 390×844 · tap Play on any frame", "kind": "title1", "maxW": 3680},
+    "n7": {"x": 2820, "y": 900, "w": 390, "text": "Routine editor: preset chips, per-step kind toggle (rest auto / hands-on tap), ± minutes, remove slides out, add step, save as named preset, reset to default. PRD §4.7 presets, FR11.", "fill": "orange"},
+    "n8": {"x": 3290, "y": 900, "w": 390, "text": "Settings › Flours: my flours + presets, add by hand, or scan a bag. Scan sheet: viewfinder with laser sweep (2.6 s demo), then protein/fibre rows highlight and fields fill green. On-device ML Kit OCR, no cloud. Wholegrain auto from fibre. PRD §4.8, FR12.", "fill": "orange"},
+    "n6": {"x": 2350, "y": 900, "w": 390, "text": "Dough routine: chained timers for mix → rest 30 → fold → rest 15 → fold → rest 15 → knead 10 → rest 30 → ball → bulk 4 h → divide. Rests auto-run and breathe; hands-on steps wait for a tap. Preview runs 60× (Tweaks › demoSpeed). PRD §4.7.", "fill": "orange"},
+    "n1": {"x": 0, "y": 900, "w": 390, "text": "Calculator: style chips, flour-first or pizzas-first, flour preset + wholemeal share, oven. Numbers tween, hydration bar eases, oven tip slides in. Suggest-only tips per PRD §4.4.", "fill": "orange"},
+    "n2": {"x": 470, "y": 900, "w": 390, "text": "Fermentation: stage timeline (+/- hours, temp), leavening type, preferment. Yeast grams animate; timeline bar grows with total hours.", "fill": "orange"},
+    "n3": {"x": 940, "y": 900, "w": 390, "text": "Recipe: preferment + final dough tables, schedule with live progress, bake card for steel. Copy-as-text.", "fill": "orange"},
+    "n4": {"x": 1410, "y": 900, "w": 390, "text": "Bake log: entries with rating + outcome chips + photo. Calibration hint card with one-tap apply (PRD §5).", "fill": "orange"},
+    "n5": {"x": 1880, "y": 900, "w": 390, "text": "Log a bake: star rating, structured outcomes (segmented), actuals, photo, notes. Stars bounce on tap.", "fill": "orange"}
+  },
+  "designSystems": []
+}

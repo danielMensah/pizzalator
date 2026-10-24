@@ -1,0 +1,49 @@
+<!-- @dsCard height=300 -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:var(--ground)}
+  .cover{position:relative;width:960px;height:300px;background:var(--ground);overflow:hidden}
+  .name{position:absolute;left:48px;bottom:44px;width:420px;font-family:var(--font-display);font-weight:700;font-size:104px;line-height:.92;letter-spacing:-.03em;color:var(--ink);margin:0}
+  .tag{position:absolute;left:50px;bottom:20px;width:420px;font-family:var(--font-sans);font-size:13px;line-height:16px;color:var(--ink-muted);margin:0}
+  svg{position:absolute;left:0;top:0}
+  .ember{fill:var(--ember)}
+  .bright{fill:var(--ember-bright)}
+  .sage{fill:var(--sage)}
+  .wheat{fill:var(--wheat)}
+  .raised{fill:var(--surface-raised)}
+  .ground{fill:var(--ground)}
+  .ring{fill:none;stroke:var(--surface-raised);stroke-width:14}
+  .arc{fill:none;stroke:var(--ember-bright);stroke-width:14;stroke-linecap:round}
+  .tile{rx:20px}
+  .pill{rx:22px}
+</style>
+</head>
+<body>
+<div class="cover">
+<!--
+derivation
+blocks: ember 300×300 slab (space-5 multiples) bleeding off right/top; sage 200×140 (radius-xl); wheat 96×44 pill (tap-min); surface-raised 120×300 relief band. Ember leads: it is the colour people know the app by.
+arrangement: one tall slab with satellites, blocks bleed off the top and right edge; everything right of x=480.
+pattern: "soft, friendly, large radii → discs, pills" plus the app's literal motif, the timer ring: one ring cut from the slab (ground stroke) with a 3/4 ember-bright arc, and three 44px pills stacked at an 8px pitch like the style chips. Chosen because the ring timer and the chip row are the two shapes every screen repeats.
+scales: space-2 (8) pill pitch, tap-min (44) pill height, radius-xl (20) tiles, radius-pill (22) pills, stroke 14 = bar height.
+-->
+<svg width="960" height="300" viewBox="0 0 960 300" aria-hidden="true">
+  <rect class="raised" x="520" y="0" width="120" height="300"/>
+  <rect class="ember tile" x="660" y="-40" width="340" height="340"/>
+  <rect class="sage tile" x="500" y="160" width="200" height="180"/>
+  <rect class="wheat pill" x="520" y="40" width="96" height="44"/>
+  <rect class="raised pill" x="520" y="92" width="140" height="44"/>
+  <rect class="bright pill" x="536" y="144" width="60" height="44"/>
+  <circle class="ring" cx="830" cy="150" r="88"/>
+  <circle class="arc" cx="830" cy="150" r="88" stroke-dasharray="552.9" stroke-dashoffset="138" transform="rotate(-90 830 150)"/>
+  <circle class="ground" cx="830" cy="150" r="56"/>
+</svg>
+<h1 class="name">Pizzalator</h1>
+<p class="tag">Dough math for the home oven. Numbers first, floury hands welcome.</p>
+</div>
+</body>
+</html>

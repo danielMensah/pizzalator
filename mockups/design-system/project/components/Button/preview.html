@@ -1,0 +1,33 @@
+<!-- @dsCard group="Actions" height=140 subtitle="primary, secondary, success, icon" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:var(--ground);font-family:var(--font-sans);padding:16px;display:flex;flex-direction:column;gap:12px}
+  .row{display:flex;gap:10px;align-items:center}
+  .btn{height:48px;border-radius:var(--radius-md);border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:600 14px var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;cursor:pointer;transition:transform .15s,filter .2s}
+  .btn:active{transform:scale(.96)}
+  .btn:hover{filter:brightness(1.08)}
+  .cta{flex:1;height:56px;border-radius:18px;background:var(--ember);border-color:var(--ember);color:var(--on-ember);font-size:16px;font-weight:700}
+  .ok{background:var(--sage);border-color:var(--sage);color:var(--on-ember)}
+  .icon{width:44px;height:44px;padding:0;border-radius:var(--radius-lg);border-color:var(--line)}
+  .btn[disabled]{opacity:.4;pointer-events:none}
+</style>
+</head>
+<body>
+  <div class="row">
+    <button class="btn cta">Plan fermentation
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <button class="btn icon" aria-label="Bake log"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg></button>
+  </div>
+  <div class="row">
+    <button class="btn">Not now</button>
+    <button class="btn ok">Apply −2 pp</button>
+    <button class="btn" disabled>Disabled</button>
+    <button class="btn" style="width:44px;padding:0;font-size:20px" aria-label="More">+</button>
+  </div>
+</body>
+</html>

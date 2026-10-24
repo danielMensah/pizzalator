@@ -1,0 +1,20 @@
+<!-- @dsCard group="Selection" height=130 subtitle="default and outcome variant" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:var(--ground);font-family:var(--font-sans);padding:16px;display:flex;flex-direction:column;gap:12px;max-width:358px}
+  .seg{display:flex;background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;padding:4px;gap:4px}
+  .seg button{flex:1;height:40px;border:0;border-radius:10px;background:transparent;color:var(--ink-muted);font:500 13px var(--font-sans);cursor:pointer;transition:background .25s,color .25s}
+  .seg button.on{background:var(--surface-raised);color:var(--ink);box-shadow:var(--shadow-segment)}
+  .seg button.on.good{background:var(--sage-tint);color:var(--sage-bright)}
+  .seg button.on.bad{background:var(--alert-tint);color:var(--alert)}
+</style>
+</head>
+<body>
+  <div class="seg" role="group" aria-label="Oven"><button class="on">Steel</button><button>Stone</button><button>Tray</button><button>Outdoor</button></div>
+  <div class="seg" role="group" aria-label="Dough felt"><button class="on bad">too wet</button><button>right</button><button>too dry</button></div>
+</body>
+</html>

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator log a bake</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes bounce{0%{transform:scale(1)}40%{transform:scale(1.35) rotate(-8deg)}70%{transform:scale(.92)}100%{transform:scale(1)}}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,16px)}15%{opacity:1;transform:translate(-50%,0)}85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:14px;animation:rise .45s ease both;display:flex;flex-direction:column;gap:10px}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.star{width:44px;height:44px;border:0;background:transparent;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.star.lit svg{animation:bounce .4s cubic-bezier(.2,.8,.3,1.3)}
+.seg{display:flex;background:#15110F;border:1px solid #2E2622;border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;height:38px;border:0;border-radius:9px;background:transparent;color:#A89F93;font:500 12px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s}
+.seg button.on{background:#2E2622;color:#F3EDE4}
+.seg button.on.bad{background:#3A2222;color:#F0A3A3}
+.seg button.on.good{background:#1F3331;color:#8FD3CB}
+.field{display:flex;align-items:center;gap:10px}
+.field input{flex:1;height:44px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:600 15px Inter,system-ui;font-variant-numeric:tabular-nums;padding:0 12px;outline:none;transition:border-color .2s;min-width:0}
+.field input:focus{border-color:#E8863A}
+textarea{width:100%;box-sizing:border-box;min-height:84px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:400 14px Inter,system-ui;padding:10px 12px;outline:none;resize:none;transition:border-color .2s}
+textarea:focus{border-color:#E8863A}
+.photoBtn{height:96px;border-radius:14px;border:1.5px dashed #3A302B;background:transparent;color:#A89F93;font:500 13px Inter,system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .2s,color .2s,background .2s}
+.photoBtn:hover{border-color:#E8863A;color:#F3A25B}
+.photoBtn.has{border-style:solid;border-color:#5A3B22;background:linear-gradient(135deg,#3A2A1E,#5A3B22 50%,#3A2A1E);color:#F3EDE4}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.cta{height:56px;border-radius:18px;border:0;background:#E8863A;color:#15110F;font:700 16px Inter,system-ui;cursor:pointer;transition:transform .2s,filter .2s,background .3s}
+.cta:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.cta.saved{background:#5BA8A0}
+.toast{position:absolute;left:50%;bottom:100px;transform:translateX(-50%);background:#F3EDE4;color:#15110F;font:600 13px Inter;padding:10px 16px;border-radius:12px;animation:toast 2s ease forwards;white-space:nowrap}
+.back{display:flex;align-items:center;gap:6px;font:500 14px Inter;text-decoration:none;color:#A89F93}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden; position: relative">
+
+  <header style="padding: 56px 20px 12px; display: flex; flex-direction: column; gap: 10px">
+    <a class="back" href="BakeLog.dc.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Bake log</a>
+    <div>
+      <h1 style="margin: 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Log this bake</h1>
+      <div style="font-size: 13px; color: #A89F93; margin-top: 2px">Friday NY · Fri 24 Oct · 63.5% · steel</div>
+    </div>
+  </header>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 4px 20px 20px">
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div class="lbl">Rating</div>
+        <div style="font-size: 13px; color: #CFC4B8">{{ratingText}}</div>
+      </div>
+      <div style="display: flex; gap: 2px; margin-left: -8px" role="group" aria-label="Rating">
+        <sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+          <button class="{{s.cls}}" onClick="{{s.pick}}" aria-label="{{s.label}}">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="{{s.fill}}" stroke="{{s.stroke}}" stroke-width="1.6" aria-hidden="true"><path d="M12 3l2.8 6 6.5.7-4.9 4.4 1.4 6.4L12 17.3 6.2 20.5l1.4-6.4L2.7 9.7l6.5-.7z"/></svg>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: .06s">
+      <div class="lbl">How did it go</div>
+      <sc-for list="{{outcomes}}" as="o" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="font-size: 13px; color: #CFC4B8">{{o.name}}</div>
+          <div class="seg" role="group" aria-label="{{o.name}}">
+            <sc-for list="{{o.opts}}" as="p" hint-placeholder-count="3">
+              <button class="{{p.cls}}" onClick="{{p.pick}}">{{p.name}}</button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div class="card" style="animation-delay: .12s">
+      <div class="lbl">What actually happened</div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div class="field"><label for="rt" style="font-size: 12px; color: #A89F93; width: 48px">Room</label><input id="rt" type="number" value="22" aria-describedby="rt-u"><span id="rt-u" style="font-size: 12px; color: #A89F93">°C</span></div>
+        <div class="field"><label for="fh" style="font-size: 12px; color: #A89F93; width: 48px">Fridge</label><input id="fh" type="number" value="46"><span style="font-size: 12px; color: #A89F93">h</span></div>
+        <div class="field"><label for="ot" style="font-size: 12px; color: #A89F93; width: 48px">Oven</label><input id="ot" type="number" value="275"><span style="font-size: 12px; color: #A89F93">°C</span></div>
+        <div class="field"><label for="bm" style="font-size: 12px; color: #A89F93; width: 48px">Bake</label><input id="bm" type="number" value="6"><span style="font-size: 12px; color: #A89F93">min</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: .18s">
+      <button class="{{photoCls}}" onClick="{{addPhoto}}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>{{photoLabel}}
+      </button>
+      <label for="notes" class="lbl">Notes</label>
+      <textarea id="notes" placeholder="Rim blistered well, centre a touch floppy. Try 61.5% next time."></textarea>
+    </div>
+
+    <button class="{{saveCls}}" onClick="{{save}}">{{saveLabel}}</button>
+  </div>
+
+  <sc-if value="{{showToast}}" hint-placeholder-val="{{false}}">
+    <div class="toast" role="status">Saved · calibration will update after 2 logs</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+const OUTCOMES = [
+  ['Dough felt',[['too wet','bad'],['right','good'],['too dry','bad']]],
+  ['Proof',[['under','bad'],['right','good'],['over','bad']]],
+  ['Crust colour',[['pale','bad'],['right','good'],['burnt','bad']]],
+  ['Crumb',[['dense','bad'],['right','good'],['open','good']]],
+  ['Bottom',[['soggy','bad'],['right','good'],['burnt','bad']]]
+];
+const RATING_TEXT=['Tap a star','Bin it','Edible','Decent','Good','Best yet'];
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state={rating:0,pick:{0:1,1:1,2:1,3:1,4:1},photo:false,saved:false,toast:false}; }
+  renderVals(){
+    const st=this.state;
+    return {
+      ratingText: RATING_TEXT[st.rating],
+      stars:[1,2,3,4,5].map(n=>({cls:'star'+(n<=st.rating?' lit':''),fill:n<=st.rating?'#F3A25B':'none',stroke:n<=st.rating?'#F3A25B':'#3A302B',label:n+' star'+(n>1?'s':''),pick:()=>this.setState({rating:n})})),
+      outcomes: OUTCOMES.map(([name,opts],gi)=>({name,opts:opts.map(([n,k],oi)=>({name:n,cls:(st.pick[gi]===oi?'on ':'')+k,pick:()=>this.setState({pick:Object.assign({},st.pick,{[gi]:oi})})}))})),
+      photoCls:'photoBtn'+(st.photo?' has':''), photoLabel: st.photo?'Photo added · tap to replace':'Add photo',
+      addPhoto:()=>this.setState({photo:!st.photo}),
+      saveCls:'cta'+(st.saved?' saved':''), saveLabel: st.saved?'Saved':'Save bake',
+      save:()=>{ this.setState({saved:true,toast:true}); clearTimeout(this._t); this._t=setTimeout(()=>this.setState({toast:false}),2100); },
+      showToast: st.toast
+    };
+  }
+  componentWillUnmount(){ clearTimeout(this._t); }
+}
+</script>
+</body>
+</html>

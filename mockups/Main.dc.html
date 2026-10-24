@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pizzalator calculator</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#15110F}
+a{color:#F3A25B}a:hover{color:#FFC08A}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.94)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(232,134,58,.0)}50%{box-shadow:0 0 0 6px rgba(232,134,58,.18)}}
+.chip{flex:0 0 auto;height:44px;padding:0 16px;border-radius:22px;border:1px solid #3A302B;background:#201A17;color:#CFC4B8;font:500 14px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s,border-color .25s,transform .25s}
+.chip.on{background:#E8863A;border-color:#E8863A;color:#15110F;animation:pop .3s cubic-bezier(.2,.8,.3,1.3)}
+.seg{display:flex;background:#201A17;border:1px solid #3A302B;border-radius:14px;padding:4px;gap:4px;position:relative}
+.seg button{flex:1;height:40px;border:0;border-radius:10px;background:transparent;color:#A89F93;font:500 13px Inter,system-ui;cursor:pointer;transition:background .25s,color .25s}
+.seg button.on{background:#2E2622;color:#F3EDE4;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.card{background:#201A17;border:1px solid #2E2622;border-radius:20px;padding:16px;animation:rise .45s ease both}
+.lbl{font:600 11px Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:#A89F93}
+.num{font:700 15px Inter,system-ui;font-variant-numeric:tabular-nums;color:#F3EDE4}
+.row{display:flex;justify-content:space-between;align-items:center;height:34px;border-bottom:1px solid #2E2622}
+.row:last-child{border-bottom:0}
+.bar{height:10px;border-radius:5px;background:#2E2622;overflow:hidden}
+.fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#E8863A,#F3A25B);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.tip{background:#2A1F14;border:1px solid #6B4420;border-radius:16px;padding:14px;animation:slideIn .4s ease both}
+input[type=number]{width:120px;height:52px;border-radius:14px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:700 26px Inter,system-ui;font-variant-numeric:tabular-nums;padding:0 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+input[type=number]:focus{border-color:#E8863A;animation:glow 1.2s ease infinite}
+input[type=range]{width:100%;accent-color:#E8863A;height:44px;margin:0}
+select{height:44px;border-radius:12px;border:1px solid #3A302B;background:#15110F;color:#F3EDE4;font:500 14px Inter,system-ui;padding:0 12px;flex:1}
+.scroll{overflow-y:auto;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;height:56px;border-radius:18px;background:#E8863A;color:#15110F;font:700 16px Inter,system-ui;text-decoration:none;transition:transform .2s,filter .2s}
+.cta:hover{filter:brightness(1.08);transform:translateY(-1px);color:#15110F}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #15110F; color: #F3EDE4; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+
+  <header style="padding: 56px 20px 12px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div>
+      <div class="lbl" style="color: #E8863A">Pizzalator</div>
+      <h1 style="margin: 2px 0 0; font: 700 30px 'Bricolage Grotesque', Inter, sans-serif; letter-spacing: -.02em">Dough</h1>
+    </div>
+    <a href="BakeLog.dc.html" aria-label="Bake log" style="width: 44px; height: 44px; border-radius: 14px; background: #201A17; border: 1px solid #2E2622; display: flex; align-items: center; justify-content: center">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F3EDE4" stroke-width="1.8" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+    </a>
+  </header>
+
+  <div class="scroll" style="flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 4px 20px 20px">
+
+    <div style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -20px; padding: 4px 20px; scrollbar-width: none">
+      <sc-for list="{{styles}}" as="s" hint-placeholder-count="6">
+        <button class="{{s.cls}}" onClick="{{s.pick}}">{{s.name}}</button>
+      </sc-for>
+    </div>
+
+    <div class="card" style="animation-delay: .05s; display: flex; flex-direction: column; gap: 12px">
+      <div class="seg" role="group" aria-label="Entry mode">
+        <button class="{{modeFlourCls}}" onClick="{{setModeFlour}}">I have flour</button>
+        <button class="{{modePizzaCls}}" onClick="{{setModePizza}}">I want pizzas</button>
+      </div>
+      <sc-if value="{{isFlour}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <label for="flour" class="lbl" style="flex: 1">Total flour</label>
+          <input id="flour" type="number" value="{{flour}}" onChange="{{setFlour}}" step="10" min="100">
+          <span class="num" style="color: #A89F93">g</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{isPizza}}" hint-placeholder-val="{{false}}">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <label for="count" class="lbl" style="flex: 1">Pizzas</label>
+          <input id="count" type="number" value="{{count}}" onChange="{{setCount}}" min="1" style="width: 84px">
+          <label for="size" class="lbl">Size</label>
+          <input id="size" type="number" value="{{size}}" onChange="{{setSize}}" min="20" style="width: 84px">
+          <span class="num" style="color: #A89F93">{{sizeUnit}}</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <div class="card" style="animation-delay: .1s; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <label for="flourType" class="lbl" style="width: 72px">Flour</label>
+        <select id="flourType" value="{{flourType}}" onChange="{{setFlourType}}">
+          <option value="uk_strong">UK strong white · 13%</option>
+          <option value="it00">Italian 00 pizza · 12.5%</option>
+          <option value="uk_vstrong">Very strong / Canadian · 14.5%</option>
+          <option value="bread">US bread flour · 12.7%</option>
+          <option value="ap">All-purpose · 11.5%</option>
+          <option value="uk_plain">UK plain · 10%</option>
+        </select>
+      </div>
+      <div style="display: flex; justify-content: flex-end; margin-top: -4px">
+        <a href="Flours.dc.html" style="font: 500 12px Inter; text-decoration: none; display: flex; align-items: center; gap: 4px">Manage flours · scan a bag
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <label for="ww" class="lbl" style="width: 72px">Wholemeal</label>
+        <input id="ww" type="range" min="0" max="40" step="5" value="{{ww}}" onChange="{{setWw}}">
+        <span class="num" style="width: 44px; text-align: right">{{ww}}%</span>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: .15s; display: flex; flex-direction: column; gap: 10px">
+      <div class="lbl">Oven</div>
+      <div class="seg" role="group" aria-label="Oven">
+        <sc-for list="{{ovens}}" as="o" hint-placeholder-count="4">
+          <button class="{{o.cls}}" onClick="{{o.pick}}">{{o.name}}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="card" style="animation-delay: .2s; display: flex; flex-direction: column; gap: 10px; border-color: #3A302B">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <div class="lbl">Hydration</div>
+        <div style="font: 700 34px 'Bricolage Grotesque', Inter, sans-serif; font-variant-numeric: tabular-nums; color: #F3A25B; letter-spacing: -.02em">{{hydShown}}<span style="font-size: 18px; color: #A89F93">%</span></div>
+      </div>
+      <div class="bar"><div class="fill" style="{{barStyle}}"></div></div>
+      <div style="display: flex; justify-content: space-between; font: 500 11px Inter; color: #A89F93"><span>{{hmin}}% style min</span><span>protein {{protein}}%</span><span>{{hmax}}% max</span></div>
+      <div style="margin-top: 4px">
+        <div class="row"><span style="color: #CFC4B8">Flour</span><span class="num">{{flourShown}} g</span></div>
+        <sc-if value="{{hasWw}}" hint-placeholder-val="{{false}}">
+          <div class="row" style="padding-left: 12px; color: #A89F93"><span>· white / wholemeal</span><span class="num" style="color: #A89F93">{{whiteG}} / {{wwG}} g</span></div>
+        </sc-if>
+        <div class="row"><span style="color: #CFC4B8">Water</span><span class="num" style="color: #F3A25B">{{waterShown}} g</span></div>
+        <div class="row"><span style="color: #CFC4B8">Salt</span><span class="num">{{saltShown}} g</span></div>
+        <div class="row"><span style="color: #CFC4B8">Oil</span><span class="num">{{oilShown}} g</span></div>
+        <div class="row"><span style="color: #CFC4B8">Sugar</span><span class="num">{{sugarShown}} g</span></div>
+        <div class="row"><span style="color: #CFC4B8">Instant yeast <span style="color: #A89F93">· 24 h @ 20 °C</span></span><span class="num">{{idyShown}} g</span></div>
+        <div class="row"><span style="color: #CFC4B8">{{ballLabel}}</span><span class="num">{{ballShown}}</span></div>
+      </div>
+    </div>
+
+    <sc-if value="{{hasTip}}" hint-placeholder-val="{{true}}">
+      <div class="tip" role="note">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F3A25B" stroke-width="1.8" aria-hidden="true"><path d="M12 3c-3 4-6 6-6 10a6 6 0 0 0 12 0c0-4-3-6-6-10z"/></svg>
+          <div style="flex: 1">
+            <div class="lbl" style="color: #F3A25B">Oven suggestion</div>
+            <p style="margin: 4px 0 10px; font-size: 13px; line-height: 1.45; color: #E9DFD2">{{tipText}}</p>
+            <div style="display: flex; gap: 8px">
+              <button class="chip" style="height: 40px" onClick="{{applyTip}}">{{tipBtn}}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <a class="cta" href="Ferment.dc.html">Plan fermentation
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#E8863A","options":["#E8863A","#D9534F","#5BA8A0","#C9A227"]},"$preview":{"width":390,"height":844}}'>
+const STYLES = {
+  neapolitan:{name:'Neapolitan',h:62,min:58,max:65,salt:2.8,oil:0,sugar:0,idy:0.10,gcm2:0.34,round:true,size:30},
+  ny:{name:'New York',h:63,min:60,max:67,salt:2.2,oil:2.5,sugar:1.5,idy:0.30,gcm2:0.37,round:true,size:35},
+  detroit:{name:'Detroit',h:72,min:70,max:75,salt:2.2,oil:3,sugar:1,idy:0.60,gcm2:0.457,round:false,pan:[25,35]},
+  roman:{name:'Roman teglia',h:80,min:75,max:85,salt:2.5,oil:2.5,sugar:0.5,idy:0.30,gcm2:0.55,round:false,pan:[30,40]},
+  sicilian:{name:'Sicilian',h:70,min:65,max:75,salt:2.2,oil:4,sugar:1,idy:0.50,gcm2:0.50,round:false,pan:[33,46]},
+  thin:{name:'Thin / tavern',h:52,min:48,max:55,salt:2.0,oil:4,sugar:1,idy:0.30,gcm2:0.26,round:true,size:30}
+};
+const FLOURS = {uk_strong:13,it00:12.5,uk_vstrong:14.5,bread:12.7,ap:11.5,uk_plain:10};
+const OVENS = [['steel','Steel'],['stone','Stone'],['none','Tray'],['outdoor','Outdoor']];
+const INPUT_KEYS = ['style','mode','flour','count','size','flourType','ww','oven','tipApplied'];
+
+class Component extends DCLogic {
+  constructor(p){
+    super(p);
+    this.state = {style:'ny',mode:'flour',flour:500,count:2,size:35,flourType:'uk_strong',ww:0,oven:'steel',tipApplied:false,
+      shown:{hyd:0,flour:0,water:0,salt:0,oil:0,sugar:0,idy:0,ball:0}};
+  }
+  compute(){
+    const st = this.state, s = STYLES[st.style];
+    const P = FLOURS[st.flourType];
+    const Hw = Math.min(s.max, Math.max(s.min, s.h + (P - 12.5)));
+    const wwFrac = st.ww/100;
+    const Hd = (1-wwFrac)*Hw + wwFrac*Math.max(Hw+10,75);
+    let oil = s.oil, sugar = s.sugar;
+    if (st.tipApplied && st.style==='neapolitan' && st.oven!=='outdoor'){ oil = 1.5; sugar = 1; }
+    let flour = st.flour;
+    let area, per;
+    if (s.round){ const d = st.size; area = Math.PI*(d/2)*(d/2); } else { area = s.pan[0]*s.pan[1]; }
+    per = area*s.gcm2;
+    if (st.mode==='pizza'){
+      const total = per*st.count;
+      flour = total/(1 + Hd/100 + s.salt/100 + oil/100 + sugar/100 + s.idy/100);
+    }
+    const water = flour*Hd/100;
+    const dough = flour*(1 + Hd/100 + s.salt/100 + oil/100 + sugar/100 + s.idy/100);
+    const balls = st.mode==='pizza' ? st.count : Math.max(1, Math.round(dough/per));
+    return {hyd:Hd, flour, water, salt:flour*s.salt/100, oil:flour*oil/100, sugar:flour*sugar/100, idy:flour*s.idy/100,
+      ball: st.mode==='pizza' ? per : dough/balls, balls, Hw, P, s};
+  }
+  tweenTo(t){
+    if (this._raf) cancelAnimationFrame(this._raf);
+    const from = Object.assign({}, this.state.shown), t0 = performance.now(), dur = 450;
+    const keys = ['hyd','flour','water','salt','oil','sugar','idy','ball'];
+    const step = (now) => {
+      const k = Math.min(1,(now-t0)/dur), e = 1-Math.pow(1-k,3);
+      const shown = {};
+      keys.forEach(x => shown[x] = from[x] + (t[x]-from[x])*e);
+      this.setState({shown});
+      if (k<1) this._raf = requestAnimationFrame(step);
+    };
+    this._raf = requestAnimationFrame(step);
+  }
+  componentDidMount(){ this.tweenTo(this.compute()); }
+  componentDidUpdate(_, prev){
+    if (INPUT_KEYS.some(k => prev[k] !== this.state[k])) this.tweenTo(this.compute());
+  }
+  componentWillUnmount(){ if (this._raf) cancelAnimationFrame(this._raf); }
+  renderVals(){
+    const st = this.state, c = this.compute(), sh = st.shown, s = c.s;
+    const f1 = (n)=>n.toFixed(1), f0=(n)=>Math.round(n);
+    const home = st.oven!=='outdoor';
+    let tipText='', tipBtn='', hasTip=false;
+    if (st.style==='neapolitan' && home && !st.tipApplied){
+      hasTip=true; tipText='Home ovens cannot brown a lean Neapolitan dough in time. Add 1.5% oil and 1% sugar (or 0.5% diastatic malt) and keep hydration at or below '+(st.oven==='stone'?63:65)+'%.'; tipBtn='Apply +1.5% oil, +1% sugar';
+    } else if (st.style==='neapolitan' && home && st.tipApplied){
+      hasTip=true; tipText='Oil and sugar applied for browning. Revert any time; the style default stays untouched.'; tipBtn='Revert to style';
+    } else if (!home && s.sugar>0){
+      hasTip=true; tipText='Sugar burns above 400 °C. For an outdoor oven set sugar to 0 and shorten the bake.'; tipBtn='Set sugar to 0 (advanced)';
+    } else if (c.P<11){
+      hasTip=true; tipText='Weak flour for this style: expect tearing and a flat crust. Blend in strong flour or lower hydration.'; tipBtn='Lower hydration 2 pp';
+    }
+    const ballLabel = st.mode==='pizza' ? (s.round?'Per ball':'Per pan') : (s.round?'Makes':'Fills');
+    const ballShown = st.mode==='pizza' ? f0(sh.ball)+' g' : c.balls+(s.round?' balls · ':' pans · ')+f0(c.ball)+' g';
+    return {
+      styles: Object.keys(STYLES).map(k=>({name:STYLES[k].name, cls:'chip'+(k===st.style?' on':''), pick:()=>this.setState({style:k,tipApplied:false,size:STYLES[k].size||st.size})})),
+      ovens: OVENS.map(([k,n])=>({name:n, cls:k===st.oven?'on':'', pick:()=>this.setState({oven:k,tipApplied:false})})),
+      isFlour: st.mode==='flour', isPizza: st.mode==='pizza',
+      modeFlourCls: st.mode==='flour'?'on':'', modePizzaCls: st.mode==='pizza'?'on':'',
+      setModeFlour:()=>this.setState({mode:'flour'}), setModePizza:()=>this.setState({mode:'pizza'}),
+      flour: st.flour, count: st.count, size: st.size, sizeUnit: s.round?'cm':'pan',
+      setFlour:(e)=>this.setState({flour:Math.max(100,+e.target.value||0)}),
+      setCount:(e)=>this.setState({count:Math.max(1,+e.target.value||1)}),
+      setSize:(e)=>this.setState({size:Math.max(20,+e.target.value||20)}),
+      flourType: st.flourType, setFlourType:(e)=>this.setState({flourType:e.target.value}),
+      ww: st.ww, setWw:(e)=>this.setState({ww:+e.target.value}), hasWw: st.ww>0,
+      whiteG: f0(c.flour*(1-st.ww/100)), wwG: f0(c.flour*st.ww/100),
+      hydShown: f1(sh.hyd), hmin: s.min, hmax: s.max, protein: c.P,
+      barStyle: 'width:'+Math.min(100,Math.max(0,(sh.hyd-40)/50*100))+'%',
+      flourShown: f0(sh.flour), waterShown: f0(sh.water), saltShown: f1(sh.salt), oilShown: f1(sh.oil), sugarShown: f1(sh.sugar), idyShown: sh.idy.toFixed(2),
+      ballLabel, ballShown,
+      hasTip, tipText, tipBtn, applyTip:()=>this.setState({tipApplied:!st.tipApplied})
+    };
+  }
+}
+</script>
+</body>
+</html>
