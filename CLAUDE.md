@@ -40,4 +40,4 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 
 ## Commands
 
-Project not scaffolded yet. Once it is: `flutter test` for the core, `flutter run` on a connected Android device or emulator.
+`flutter test` for the core, `flutter analyze`, `flutter run` on a connected Android device or emulator.
