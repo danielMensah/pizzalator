@@ -57,7 +57,7 @@ All text pairs ≥ 4.5:1 on their ground; large numbers ≥ 3:1.
 - Display: **Bricolage Grotesque** 700, letter-spacing −0.02em. H1 30 px, key numbers 34–54 px.
 - Body/UI: **Inter**. Body 15/22, small 13/19, caption 12/16 500, label 11/16 600 uppercase +0.08em in `ink-muted`.
 - Numbers: Inter 700, `font-variant-numeric: tabular-nums`.
-- Both families from Google Fonts; no bundled files.
+- Both families from Google Fonts, bundled as TTF assets in `assets/google_fonts/` (no runtime fetch; the app has no network permission).
 
 ## Components
 

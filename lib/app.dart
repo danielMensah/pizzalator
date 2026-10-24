@@ -9,18 +9,23 @@ import 'screens/routine.dart';
 import 'screens/timers.dart';
 import 'state/routine.dart';
 import 'state/timer_run.dart';
+import 'theme/fonts.dart';
 import 'theme/pizza_theme.dart';
 
-/// Launch, before the first frame: saved routine and timer run back, alarms
-/// rescheduled (FR10). Never throws: an unreadable file, a full disk or a
-/// refused alarm must not keep the app on its launch screen.
-Future<void> bootstrap(ProviderContainer c) => Future.wait([
-  for (final step in [
-    c.read(routineProvider.notifier).load,
-    c.read(timerRunProvider.notifier).restore,
-  ])
-    step().catchError((Object e) => debugPrint('launch: $e')),
-]);
+/// Launch, before the first frame: bundled fonts only, saved routine and
+/// timer run back, alarms rescheduled (FR10). Never throws: an unreadable
+/// file, a full disk or a refused alarm must not keep the app on its launch
+/// screen.
+Future<void> bootstrap(ProviderContainer c) {
+  configureFonts();
+  return Future.wait([
+    for (final step in [
+      c.read(routineProvider.notifier).load,
+      c.read(timerRunProvider.notifier).restore,
+    ])
+      step().catchError((Object e) => debugPrint('launch: $e')),
+  ]);
+}
 
 class PizzalatorApp extends ConsumerWidget {
   const PizzalatorApp({super.key});

@@ -22,3 +22,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    # Bundled so release builds need no network (FR8). Names follow the
+    # google_fonts API convention; see lib/theme/fonts.dart.
+    - assets/google_fonts/

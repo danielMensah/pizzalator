@@ -85,7 +85,10 @@ void main() {
         'selected': 1,
       };
       saveRun();
+      GoogleFonts.config.allowRuntimeFetching = true;
       await bootstrap(c);
+      // Fonts come from the bundle only (FR8: no network).
+      expect(GoogleFonts.config.allowRuntimeFetching, isFalse);
       expect(c.read(routineProvider).current.name, 'Mine');
       expect(c.read(timerRunProvider)!.step.name, 'Rest');
       expect(notes.pending.values.single.title, 'Rest over');

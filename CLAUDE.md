@@ -32,7 +32,7 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 
 - Calc core is `calc(RecipeInputs) -> RecipeOutputs`, deterministic, tested with golden cases (e.g. Neapolitan 1000 g @ 12.5% / 62% → 620 g water, 28 g salt).
 - Rounding: flour/water 1 g; salt/oil/sugar 0.1 g; yeast 0.01 g.
-- Tokens → `ThemeExtension` (`PizzaColors`, `PizzaText`); fonts via `google_fonts` (Bricolage Grotesque display, Inter body). Tabular numerals on every value.
+- Tokens → `ThemeExtension` (`PizzaColors`, `PizzaText`); fonts via `google_fonts` (Bricolage Grotesque display, Inter body), bundled in `assets/google_fonts/` with runtime fetching off; a new weight needs its `<Family>-<Weight>.ttf` there (`test/theme/fonts_test.dart` lists them). Tabular numerals on every value.
 - Tap targets ≥ 44 px; primary CTA 56 px at the bottom. Dark theme default.
 - Animations map to state changes only (see DESIGN.md motion table). Honour reduced motion.
 - Heuristic constants (hydration slope `k`, wholemeal 75%, yeast table) are named knobs, not magic numbers, and are marked `// ponytail: calibration knob`.
