@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Espresso, the dark theme's ground (mockups/DESIGN.md). The app opens
+         dark, so launch, splash and icon use it in either system mode. -->
+    <color name="ground">#15110F</color>
+</resources>

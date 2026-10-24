@@ -107,18 +107,22 @@ class _PizzaChipState extends State<PizzaChip>
 }
 
 /// Two to four mutually exclusive options. Each segment draws 40 px inside a
-/// 44 px tap target.
+/// 44 px tap target. [selectedFill] / [selectedInk] tint the selected one
+/// (a bad or good bake outcome); raised and ink by default.
 class Segmented<T> extends StatelessWidget {
   const Segmented({
     super.key,
     required this.options,
     required this.value,
     required this.onChanged,
+    this.selectedFill,
+    this.selectedInk,
   });
 
   final List<(T, String)> options;
   final T value;
   final ValueChanged<T> onChanged;
+  final Color? selectedFill, selectedInk;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +152,9 @@ class Segmented<T> extends StatelessWidget {
                       constraints: const BoxConstraints(minHeight: 40),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: v == value ? c.surfaceRaised : null,
+                        color: v == value
+                            ? selectedFill ?? c.surfaceRaised
+                            : null,
                         borderRadius: BorderRadius.circular(10),
                         boxShadow: v == value
                             ? const [
@@ -165,7 +171,7 @@ class Segmented<T> extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: t.segment.copyWith(
-                          color: v == value ? c.ink : c.inkMuted,
+                          color: v == value ? selectedInk ?? c.ink : c.inkMuted,
                         ),
                       ),
                     ),

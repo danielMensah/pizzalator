@@ -184,6 +184,11 @@ ThemeData pizzaTheme(Brightness brightness) {
       bodyColor: c.ink,
       displayColor: c.ink,
     ),
+    // showPizzaSheet styles the sheet; only the theme reaches the handle.
+    bottomSheetTheme: BottomSheetThemeData(
+      dragHandleColor: c.lineStrong,
+      dragHandleSize: const Size(40, 4),
+    ),
     extensions: [c, PizzaText(c)],
   );
 }

@@ -147,7 +147,7 @@ class _RingTimerState extends State<RingTimer> with TickerProviderStateMixin {
                         tween: Tween(end: widget.progress),
                         duration: const Duration(milliseconds: 900),
                         builder: (_, p, _) => CustomPaint(
-                          painter: _RingPainter(
+                          painter: RingPainter(
                             p,
                             c.surfaceRaised,
                             widget.color,
@@ -199,8 +199,10 @@ class _RingTimerState extends State<RingTimer> with TickerProviderStateMixin {
   }
 }
 
-class _RingPainter extends CustomPainter {
-  _RingPainter(this.progress, this.track, this.color);
+/// Track plus an arc of [progress] from 12 o'clock, clockwise; shared with
+/// the launch screen.
+class RingPainter extends CustomPainter {
+  const RingPainter(this.progress, this.track, this.color);
 
   final double progress;
   final Color track, color;
@@ -226,6 +228,6 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_RingPainter old) =>
+  bool shouldRepaint(RingPainter old) =>
       old.progress != progress || old.track != track || old.color != color;
 }

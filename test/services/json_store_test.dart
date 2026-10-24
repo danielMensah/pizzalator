@@ -35,14 +35,24 @@ void main() {
     expect(dir.listSync().where((f) => f.path.endsWith('.tmp')), isEmpty);
   });
 
-  test('corrupt JSON reads as null', () async {
-    file('a').writeAsStringSync('{"x": ');
-    expect(await store.read('a'), isNull);
-  });
+  File bad(String name) => File('${file(name).path}.bad');
 
-  test('non UTF-8 bytes read as null', () async {
+  test(
+    'corrupt JSON reads as null and is set aside from the next write',
+    () async {
+      file('a').writeAsStringSync('{"x": ');
+      expect(await store.read('a'), isNull);
+      await store.write('a', {'v': 1});
+      expect(bad('a').readAsStringSync(), '{"x": ');
+      expect(await store.read('a'), {'v': 1});
+    },
+  );
+
+  test('non UTF-8 bytes read as null and are set aside', () async {
     file('a').writeAsBytesSync([0xff, 0xfe, 0xfd]);
     expect(await store.read('a'), isNull);
+    await store.write('a', {'v': 1});
+    expect(bad('a').readAsBytesSync(), [0xff, 0xfe, 0xfd]);
   });
 
   test('a failed write keeps the previous good file', () async {

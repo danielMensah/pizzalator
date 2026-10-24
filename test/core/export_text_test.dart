@@ -82,6 +82,12 @@ void main() {
       expect(clockText(DateTime(2026, 11, 1, 0, 30)), 'Sun 00:30');
     });
 
+    test('dayText: weekday, day, short month (bake log)', () {
+      expect(dayText(DateTime(2026, 10, 16, 19)), 'Fri 16 Oct');
+      expect(dayText(DateTime(2026, 1, 4)), 'Sun 4 Jan');
+      expect(dayText(DateTime(2026, 12, 31, 23, 59)), 'Thu 31 Dec');
+    });
+
     test('whenText: absolute with a bake time, else offset from start', () {
       ScheduleItem item(Duration offset, [DateTime? at]) => ScheduleItem(
         step: ScheduleStep.mix,

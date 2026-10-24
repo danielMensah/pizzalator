@@ -153,4 +153,33 @@ void main() {
     await tester.tap(find.text('Recipe'));
     expect(backs, 1);
   });
+
+  testWidgets('header icon button: 44 × 44 surface tile, labelled, taps', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      host(
+        Center(
+          child: HeaderIconButton(
+            icon: Icons.bookmark_border,
+            label: 'Saved recipes',
+            onPressed: () => taps++,
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(HeaderIconButton)), const Size(44, 44));
+    final style = tester.widget<IconButton>(find.byType(IconButton)).style!;
+    expect(style.backgroundColor!.resolve({}), c.surface);
+    expect(style.side!.resolve({})!.color, c.line);
+    expect(
+      style.shape!.resolve({}),
+      RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    );
+    // TalkBack reads the tooltip.
+    expect(find.byTooltip('Saved recipes'), findsOneWidget);
+    await tester.tap(find.byType(HeaderIconButton));
+    expect(taps, 1);
+  });
 }

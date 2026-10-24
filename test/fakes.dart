@@ -1,11 +1,19 @@
 // Shared fakes. Anything that writes through jsonStoreProvider or
-// notificationsProvider overrides them with these (CLAUDE.md).
+// notificationsProvider overrides them with these (CLAUDE.md); the label
+// scan overrides labelScannerProvider, bake photos photoStoreProvider;
+// clipboard tests install FakeClipboard.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:pizzalator/core/timer_run.dart';
 import 'package:pizzalator/services/json_store.dart';
+import 'package:pizzalator/services/label_scanner.dart';
 import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/photos.dart';
 
 /// In memory, round-tripping through JSON like the real store: real file IO
 /// never completes inside fake-async widget tests.
@@ -68,4 +76,65 @@ class FakeNotifications implements Notifications {
     cancels++;
     pending.clear();
   }
+}
+
+/// Hands back [next] (null: the user backed out), or throws [error].
+class FakeScanner implements LabelScanner {
+  LabelScan? next;
+  Object? error;
+  final sources = <ImageSource>[];
+
+  /// When set, scan() waits on it: the camera is open or OCR is running.
+  Completer<void>? gate;
+
+  @override
+  Future<LabelScan?> scan(ImageSource source) async {
+    sources.add(source);
+    await gate?.future;
+    if (error case final e?) throw e;
+    return next;
+  }
+}
+
+/// The system clipboard in memory: what copy wrote, what paste reads (null
+/// reads as empty).
+class FakeClipboard {
+  String? text;
+
+  /// Takes over the platform channel for [tester]'s test, and gives it back.
+  void install(WidgetTester tester) {
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      switch (call.method) {
+        case 'Clipboard.setData':
+          text = (call.arguments as Map<Object?, Object?>)['text'] as String?;
+        case 'Clipboard.getData':
+          return text == null ? null : {'text': text};
+      }
+      return null;
+    });
+    addTearDown(
+      () => messenger.setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+  }
+}
+
+/// Photos without files: pick hands back [next] (null: the user backed
+/// out) or throws [error]; delete only records the name.
+class FakePhotoStore extends PhotoStore {
+  FakePhotoStore() : super(Directory.systemTemp);
+  String? next = 'p1.jpg';
+  Object? error;
+  final sources = <ImageSource>[];
+  final deleted = <String>[];
+
+  @override
+  Future<String?> pick(ImageSource source) async {
+    sources.add(source);
+    if (error case final e?) throw e;
+    return next;
+  }
+
+  @override
+  Future<void> delete(String name) async => deleted.add(name);
 }

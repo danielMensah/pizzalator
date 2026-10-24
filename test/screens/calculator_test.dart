@@ -6,11 +6,16 @@ import 'package:pizzalator/core/calc.dart';
 import 'package:pizzalator/core/oven.dart';
 import 'package:pizzalator/routes.dart';
 import 'package:pizzalator/screens/calculator.dart';
+import 'package:pizzalator/services/json_store.dart';
+import 'package:pizzalator/state/flours.dart';
 import 'package:pizzalator/state/oven.dart';
 import 'package:pizzalator/state/recipe.dart';
+import 'package:pizzalator/state/recipes.dart';
 import 'package:pizzalator/state/units.dart';
 import 'package:pizzalator/theme/pizza_theme.dart';
 import 'package:pizzalator/widgets/widgets.dart';
+
+import '../fakes.dart';
 
 /// Pumps the screen on a 360 dp wide phone, tall enough to build every card.
 Future<ProviderContainer> pumpCalc(
@@ -21,7 +26,9 @@ Future<ProviderContainer> pumpCalc(
   tester.view.physicalSize = Size(width * 3, 9000);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
-  final c = ProviderContainer.test();
+  final c = ProviderContainer.test(
+    overrides: [jsonStoreProvider.overrideWithValue(MemoryStore())],
+  );
   await tester.pumpWidget(
     UncontrolledProviderScope(
       container: c,
@@ -33,7 +40,12 @@ Future<ProviderContainer> pumpCalc(
           ).copyWith(textScaler: TextScaler.linear(scale)),
           child: app!,
         ),
-        routes: {Routes.ferment: (_) => const Text('Ferment stub')},
+        routes: {
+          Routes.ferment: (_) => const Text('Ferment stub'),
+          Routes.flours: (_) => const Text('Flours stub'),
+          Routes.recipes: (_) => const Text('Recipes stub'),
+          Routes.bakeLog: (_) => const Text('Bake log stub'),
+        },
         // Non-const so the constructor itself runs under coverage.
         home: CalculatorScreen(key: UniqueKey()),
       ),
@@ -299,6 +311,74 @@ void main() {
       expect(tester.getRect(pct).left, greaterThan(tester.getRect(name).right));
     });
 
+    testWidgets('the picker lists my flours after the presets', (tester) async {
+      final c = await pumpCalc(tester);
+      const mine = Flour('Sainsbury’s strong white', 13.7, fibrePct: 3.1);
+      await c.read(customFloursProvider.notifier).add(mine);
+      await tester.pumpAndSettle();
+      await pickFlour(tester, 0, 'Sainsbury’s strong white');
+      expect(inputs(c).flours.single.flour, mine);
+      expect(find.text('13.7%'), findsOneWidget);
+    });
+
+    testWidgets('a flour of mine equal to a preset is listed once', (
+      tester,
+    ) async {
+      final c = await pumpCalc(tester);
+      // Same name, protein and type as the preset the recipe is on.
+      await c
+          .read(customFloursProvider.notifier)
+          .add(const Flour('UK strong white', 13, note: 'copy'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tapOn(tester, find.byType(DropdownButton<Flour>));
+      // The button's own label plus one menu item.
+      expect(find.text('UK strong white'), findsNWidgets(2));
+    });
+
+    testWidgets('Manage flours link opens Settings › Flours', (tester) async {
+      await pumpCalc(tester);
+      final link = find.text('Manage flours · scan a bag');
+      expect(
+        tester
+            .getSize(
+              find
+                  .ancestor(of: link, matching: find.byType(ConstrainedBox))
+                  .first,
+            )
+            .height,
+        greaterThanOrEqualTo(44),
+      );
+      expect(
+        find.bySemanticsLabel('Manage flours · scan a bag'),
+        findsOneWidget,
+      );
+      await tapOn(tester, link);
+      expect(find.text('Flours stub'), findsOneWidget);
+    });
+
+    testWidgets('two flours with one name: each row its own grams', (
+      tester,
+    ) async {
+      final c = await pumpCalc(tester);
+      // A recipe's snapshot of a flour, and a later one given its name.
+      c
+          .read(recipeProvider.notifier)
+          .update(
+            (i) => i.copyWith(
+              flours: const [
+                FlourShare(Flour('Doves strong', 13), 70),
+                FlourShare(Flour('Doves strong', 14), 30),
+              ],
+              preferment: Preferment.poolish,
+            ),
+          );
+      await tester.pumpAndSettle();
+      expect(find.text('· Doves strong'), findsNWidgets(2));
+      expect(find.text('700 g'), findsOneWidget);
+      expect(find.text('300 g'), findsOneWidget);
+    });
+
     testWidgets('a flour outside the presets still shows', (tester) async {
       final c = await pumpCalc(tester);
       c
@@ -509,6 +589,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Starter'), findsOneWidget);
     expect(find.text('Instant yeast'), findsNothing);
+  });
+
+  testWidgets('header: saved recipes; the open one named, edited marked', (
+    tester,
+  ) async {
+    final c = await pumpCalc(tester);
+    expect(find.textContaining('edited'), findsNothing);
+    await c.read(savedRecipesProvider.notifier).saveAs('Friday NY');
+    await tester.pumpAndSettle();
+    expect(find.text('Friday NY'), findsOneWidget);
+    c.read(recipeProvider.notifier).setFlourG(600);
+    await tester.pumpAndSettle();
+    expect(find.text('Friday NY · edited'), findsOneWidget);
+    await tapOn(tester, find.byTooltip('Saved recipes'));
+    expect(find.text('Recipes stub'), findsOneWidget);
+  });
+
+  testWidgets('header: the bake log, a 44 px tile', (tester) async {
+    await pumpCalc(tester);
+    final tile = find.byTooltip('Bake log');
+    expect(tester.getSize(tile), const Size.square(44));
+    await tapOn(tester, tile);
+    expect(find.text('Bake log stub'), findsOneWidget);
   });
 
   testWidgets('Plan fermentation opens the ferment screen', (tester) async {

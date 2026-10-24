@@ -15,7 +15,8 @@ Widget _content(String label, IconData? icon, IconData? trailingIcon) => Row(
 );
 
 /// The screen's one CTA: ember, 56 px, fills its parent's width (wrap it in
-/// Expanded inside a Row).
+/// Expanded inside a Row). [compact]: 48 px in a [SecondaryButton]'s shape
+/// and type, for a lead button beside one (Flours "Scan a bag").
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -23,6 +24,7 @@ class PrimaryButton extends StatelessWidget {
     this.onPressed,
     this.icon,
     this.trailingIcon,
+    this.compact = false,
   });
 
   final String label;
@@ -31,6 +33,7 @@ class PrimaryButton extends StatelessWidget {
 
   /// E.g. the forward arrow on navigation CTAs.
   final IconData? trailingIcon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +45,11 @@ class PrimaryButton extends StatelessWidget {
         foregroundColor: c.onEmber,
         disabledBackgroundColor: c.ember.withValues(alpha: 0.4),
         disabledForegroundColor: c.onEmber.withValues(alpha: 0.4),
-        minimumSize: const Size.fromHeight(56),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        textStyle: context.text.buttonCta,
+        minimumSize: Size.fromHeight(compact ? 48 : 56),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(compact ? 12 : 18),
+        ),
+        textStyle: compact ? context.text.button : context.text.buttonCta,
       ),
       child: _content(label, icon, trailingIcon),
     );
@@ -52,7 +57,8 @@ class PrimaryButton extends StatelessWidget {
 }
 
 /// Surface button with a line-strong border, 48 px. [success] turns it sage
-/// for an action that just completed (Copied, Saved) or Apply.
+/// for an action that just completed (Copied, Saved) or Apply; [alert] red
+/// for a destructive one (Delete).
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({
     super.key,
@@ -60,18 +66,21 @@ class SecondaryButton extends StatelessWidget {
     this.onPressed,
     this.icon,
     this.success = false,
+    this.alert = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
-  final bool success;
+  final bool success, alert;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final (fill, ink, line) = success
         ? (c.sage, c.onEmber, c.sage)
+        : alert
+        ? (c.alertTint, c.alert, c.alert)
         : (c.surface, c.ink, c.lineStrong);
     return OutlinedButton(
       onPressed: onPressed,
@@ -87,6 +96,38 @@ class SecondaryButton extends StatelessWidget {
         textStyle: context.text.button,
       ),
       child: _content(label, icon, null),
+    );
+  }
+}
+
+/// Small ember-bright link with a chevron, e.g. "Manage flours · scan a
+/// bag" (mockups/Main.dc.html). 44 px tall to tap.
+class TextLink extends StatelessWidget {
+  const TextLink({super.key, required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = context.colors.emberBright;
+    return Semantics(
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 4,
+            children: [
+              Text(label, style: context.text.caption.copyWith(color: ink)),
+              Icon(Icons.chevron_right, size: 14, color: ink),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

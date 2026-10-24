@@ -1,4 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- FR8, fully offline. ML Kit's text recognition pulls in Google's
+         datatransport (usage logging), which adds INTERNET; the bundled
+         Latin model needs no network, so it goes. Debug builds keep the
+         Flutter tool's own INTERNET (src/debug). -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
     <!-- Routine timers (flutter_local_notifications). POST_NOTIFICATIONS is
          asked for at runtime on Android 13+ when a routine starts. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
@@ -11,7 +17,7 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32"/>
     <application
-        android:label="pizzalator"
+        android:label="Pizzalator"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

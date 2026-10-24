@@ -136,7 +136,7 @@ class RoutineScreen extends ConsumerWidget {
   }
 
   Future<void> _save(BuildContext context, WidgetRef ref) async {
-    final v = await _ask(context, 'Save as preset', 'Save preset', [
+    final v = await askText(context, 'Save as preset', 'Save preset', [
       ('Preset name', '', 'e.g. Same-day NY'),
     ]);
     if (v == null || !context.mounted) return;
@@ -267,7 +267,7 @@ class _StepTile extends ConsumerWidget {
   }
 
   Future<void> _edit(BuildContext context, WidgetRef ref) async {
-    final v = await _ask(context, 'Edit step', 'Save step', [
+    final v = await askText(context, 'Edit step', 'Save step', [
       ('Name', step.name, null),
       ('Note', step.note, 'Shown on the timer'),
     ]);
@@ -283,102 +283,6 @@ class _StepTile extends ConsumerWidget {
               note: v[1].trim(),
             ),
           ),
-    );
-  }
-}
-
-/// Bottom sheet of (label, value, hint) text fields; returns the values, or
-/// null when dismissed.
-Future<List<String>?> _ask(
-  BuildContext context,
-  String title,
-  String action,
-  List<(String, String, String?)> fields,
-) => showModalBottomSheet<List<String>>(
-  context: context,
-  isScrollControlled: true,
-  backgroundColor: context.colors.surfaceSheet,
-  barrierColor: context.colors.scrim,
-  shape: const RoundedRectangleBorder(
-    borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-  ),
-  builder: (_) => _TextSheet(title: title, action: action, fields: fields),
-);
-
-class _TextSheet extends StatefulWidget {
-  const _TextSheet({
-    required this.title,
-    required this.action,
-    required this.fields,
-  });
-
-  final String title, action;
-  final List<(String, String, String?)> fields;
-
-  @override
-  State<_TextSheet> createState() => _TextSheetState();
-}
-
-class _TextSheetState extends State<_TextSheet> {
-  late final _controllers = [
-    for (final (_, value, _) in widget.fields)
-      TextEditingController(text: value),
-  ];
-
-  @override
-  void dispose() {
-    for (final c in _controllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final t = context.text;
-    OutlineInputBorder border(Color color) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: color),
-    );
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        24,
-        20,
-        24 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(widget.title, style: t.h2),
-          for (final (i, (label, _, hint)) in widget.fields.indexed) ...[
-            const SizedBox(height: 12),
-            TextField(
-              controller: _controllers[i],
-              autofocus: i == 0,
-              textCapitalization: TextCapitalization.sentences,
-              style: t.body,
-              decoration: InputDecoration(
-                labelText: label,
-                hintText: hint,
-                filled: true,
-                fillColor: c.ground,
-                enabledBorder: border(c.lineStrong),
-                focusedBorder: border(c.ember),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          PrimaryButton(
-            label: widget.action,
-            onPressed: () => Navigator.pop(context, [
-              for (final ctl in _controllers) ctl.text,
-            ]),
-          ),
-        ],
-      ),
     );
   }
 }

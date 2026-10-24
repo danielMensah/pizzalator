@@ -235,23 +235,79 @@ class StagePlan {
   );
 }
 
+// ponytail: calibration knob. Fibre per 100 g from which a label reads as
+// wholegrain: white flours sit near 3 g, wholemeal 7–11 g (PRD §4.3).
+const double kWholegrainFibreG = 6;
+
+bool wholegrainFromFibre(double fibreG) => fibreG >= kWholegrainFibreG;
+
+// ponytail: calibration knob. Label values a flour can have, g per 100 g
+// (PRD §4.8 confidence limits): (min, max).
+const kProteinRangeG = (5.0, 20.0), kFibreRangeG = (0.0, 15.0);
+
+bool inLabelRange(double? g, (double, double) range) =>
+    g != null && g >= range.$1 && g <= range.$2;
+
+/// A preset or the user's own flour (PRD §4.3). Equal by what the formula
+/// and the label read (name, protein, wholegrain, fibre), never by [note],
+/// so a recipe's snapshot still matches its flour.
 class Flour {
-  const Flour(this.name, this.proteinPct, {this.wholegrain = false});
+  const Flour(
+    this.name,
+    this.proteinPct, {
+    this.wholegrain = false,
+    this.fibrePct,
+    this.note = '',
+  });
+
+  factory Flour.fromJson(Map<String, Object?> json) => Flour(
+    json['name'] as String,
+    (json['proteinPct'] as num).toDouble(),
+    wholegrain: json['wholegrain'] as bool? ?? false,
+    fibrePct: (json['fibrePct'] as num?)?.toDouble(),
+    note: json['note'] as String? ?? '',
+  );
+
   final String name;
   final double proteinPct;
   final bool wholegrain;
 
+  /// Fibre off the label, g per 100 g; null when not known.
+  final double? fibrePct;
+
+  /// The grey sub-line on Settings › Flours: brands, use, "scanned".
+  final String note;
+
+  Map<String, Object?> toJson() => {
+    'name': name,
+    'proteinPct': proteinPct,
+    'wholegrain': wholegrain,
+    'fibrePct': fibrePct,
+    'note': note,
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is Flour &&
+      other.name == name &&
+      other.proteinPct == proteinPct &&
+      other.wholegrain == wholegrain &&
+      other.fibrePct == fibrePct;
+
+  @override
+  int get hashCode => Object.hash(name, proteinPct, wholegrain, fibrePct);
+
   static const presets = [
-    Flour('Italian 00 pizza', 12.5),
-    Flour('Italian 00 weak', 10.5),
+    Flour('Italian 00 pizza', 12.5, note: 'Caputo Pizzeria class'),
+    Flour('Italian 00 weak', 10.5, note: 'supermarket, pasta grade'),
     Flour('Italian 0 / Manitoba', 14),
     Flour('UK plain', 10),
-    Flour('UK strong white', 13),
-    Flour('UK very strong / Canadian', 14.5),
+    Flour('UK strong white', 13, note: 'Sainsbury’s 13.7, Doves 12–14'),
+    Flour('UK very strong / Canadian', 14.5, note: 'Waitrose Canadian 15'),
     Flour('US all-purpose', 11.5),
-    Flour('US bread flour', 12.7),
-    Flour('Wholemeal', 13, wholegrain: true),
-    Flour('Semolina rimacinata', 12.5),
+    Flour('US bread flour', 12.7, note: 'King Arthur 12.7'),
+    Flour('Wholemeal', 13, wholegrain: true, note: 'absorbs ~75%'),
+    Flour('Semolina rimacinata', 12.5, note: '10–20% blend'),
   ];
   static const ukStrong = Flour('UK strong white', 13);
 }

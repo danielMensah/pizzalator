@@ -3,7 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// One JSON file per name in [dir]. Missing or corrupt files read as null.
+/// One JSON file per name in [dir]. Missing or corrupt files read as null;
+/// a corrupt one is set aside first (see [keepBad]).
 class JsonStore {
   JsonStore(this.dir);
 
@@ -16,13 +17,18 @@ class JsonStore {
   File _file(String name) => File('${dir.path}/$name.json');
 
   Future<Object?> read(String name) async {
+    final file = _file(name);
     try {
-      return jsonDecode(await _file(name).readAsString());
+      return jsonDecode(await file.readAsString());
     } on FileSystemException {
-      return null; // missing, unreadable or not UTF-8
+      if (!file.existsSync()) return null; // missing
+      // unreadable or not UTF-8: corrupt
     } on FormatException {
-      return null;
+      // truncated or hand-edited: corrupt
     }
+    // Before the next write can land on it, so it can be recovered by hand.
+    await keepBad(name);
+    return null;
   }
 
   /// Moves `<name>.json` to `<name>.json.bad`, so a file this build cannot

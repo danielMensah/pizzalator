@@ -120,6 +120,47 @@ void main() {
     expect(s().current, same(defaultRoutine));
   });
 
+  group('use: a saved recipe\'s routine', () {
+    final mine = RoutinePreset(
+      name: 'Same-day NY',
+      steps: [defaultRoutine.steps.first.copyWith(minutes: 7)],
+    );
+
+    test('null is the built-in, edits dropped', () async {
+      await n().setMinutes(0, 9);
+      await n().use(null);
+      expect(s().current, same(defaultRoutine));
+    });
+
+    test('a preset of that name is selected', () async {
+      await n().saveAsPreset('Same-day NY');
+      await n().select(0);
+      await n().use(mine);
+      expect(s().selected, 1);
+      expect(s().presets, hasLength(2));
+      expect(s().dirty, isFalse);
+    });
+
+    test('one not here is added, selected and saved', () async {
+      await n().use(mine);
+      expect(s().presets, hasLength(2));
+      expect(s().current.name, 'Same-day NY');
+      expect(s().current.steps.single.minutes, 7);
+      c.dispose();
+      c = container();
+      await n().load();
+      expect(s().current.name, 'Same-day NY');
+    });
+
+    test('the built-in\'s name: its edited working copy comes back', () async {
+      final draft = RoutinePreset(name: defaultRoutine.name, steps: mine.steps);
+      await n().use(draft);
+      expect(s().presets, [defaultRoutine]);
+      expect(s().dirty, isTrue);
+      expect(s().current.steps.single.minutes, 7);
+    });
+  });
+
   test('resetToDefault selects the built-in and drops edits', () async {
     await n().saveAsPreset('Mine');
     await n().resetToDefault();
@@ -166,7 +207,6 @@ void main() {
     expect(s().current, same(defaultRoutine));
     // Set aside before the next edit writes the default over it.
     expect(saved('.bad').readAsStringSync(), '{"presets":"nope"}');
-    expect(saved().existsSync(), isFalse);
     await store.write(routineStoreName, [1, 2]);
     await n().load();
     expect(s().presets, [defaultRoutine]);
@@ -186,6 +226,11 @@ void main() {
     expect(s().presets.map((p) => p.name), [defaultRoutine.name, 'Good']);
     expect(s().selected, 1, reason: 'clamped to what loaded');
     expect(saved('.bad').existsSync(), isTrue);
+    // What loaded is written back: the next launch still has it.
+    c.dispose();
+    c = container();
+    await n().load();
+    expect(s().presets.map((p) => p.name), [defaultRoutine.name, 'Good']);
   });
 
   test('a preset with no steps loads as the default', () async {

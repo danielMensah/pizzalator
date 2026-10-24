@@ -35,6 +35,7 @@ class RoutineNotifier extends Notifier<RoutineState> {
   /// Restores saved presets; keeps the default when nothing (valid) is saved.
   /// A preset that does not parse or has no steps is skipped, and the file is
   /// set aside first, so the next write cannot destroy what was skipped.
+  /// What did parse is written back, or the next launch would find no file.
   Future<void> load() async {
     final json = await _store.read(routineStoreName);
     if (json == null) return;
@@ -59,20 +60,41 @@ class RoutineNotifier extends Notifier<RoutineState> {
     ];
     final draft = m?['draft'] == null ? null : parse(m!['draft']);
     final selected = m?['selected'];
-    if (m == null || list is! List<Object?> || bad) {
-      await _store.keepBad(routineStoreName);
-    }
-    state = RoutineState(
+    final next = RoutineState(
       presets: presets,
       selected: (selected is int ? selected : 0).clamp(0, presets.length - 1),
       draft: draft,
     );
+    if (m == null || list is! List<Object?> || bad) {
+      await _store.keepBad(routineStoreName);
+      return _set(next);
+    }
+    state = next;
   }
 
   Future<void> select(int i) =>
       _set(RoutineState(presets: state.presets, selected: i));
 
   Future<void> resetToDefault() => select(0);
+
+  /// A saved recipe's routine (null: the built-in). The built-in's name with
+  /// other steps is its working copy; any other name selects that preset,
+  /// added when it is not here.
+  Future<void> use(RoutinePreset? routine) {
+    if (routine == null) return select(0);
+    final s = state;
+    final i = s.presets.indexWhere((p) => p.name == routine.name);
+    if (i == 0) {
+      return _set(RoutineState(presets: s.presets, draft: routine));
+    }
+    if (i > 0) return select(i);
+    return _set(
+      RoutineState(
+        presets: [...s.presets, routine],
+        selected: s.presets.length,
+      ),
+    );
+  }
 
   Future<void> setMinutes(int step, int minutes) =>
       _edit((s) => s[step] = s[step].copyWith(minutes: max(1, minutes)));

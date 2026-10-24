@@ -6,11 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/calc.dart';
+import '../core/calibration.dart' show kYeastKnobMax, kYeastKnobMin;
 import '../core/export_text.dart';
 import '../core/oven.dart';
 import '../routes.dart';
+import '../state/flours.dart';
 import '../state/oven.dart';
 import '../state/recipe.dart';
+import '../state/recipes.dart';
 import '../state/units.dart';
 import '../theme/pizza_theme.dart';
 import '../widgets/widgets.dart';
@@ -32,7 +35,7 @@ const _pctSteps = {
 };
 const _kStep = (0.1, 0.0, 2.0);
 const _absorptionStep = (1.0, 60.0, 90.0);
-const _knobStep = (0.05, 0.5, 2.0);
+const _knobStep = (0.05, kYeastKnobMin, kYeastKnobMax);
 
 /// Calculator: style, entry mode, flour blend, oven, live formula, advanced
 /// overrides and tips. Layout, copy and behaviour: mockups/Main.dc.html.
@@ -47,10 +50,34 @@ class CalculatorScreen extends ConsumerWidget {
       ...ref.watch(doughTipsProvider),
       ...ref.watch(ovenTipsProvider),
     ];
+    final active = ref.watch(activeRecipeProvider);
+    final edited = ref.watch(recipeDirtyProvider) ? ' · edited' : '';
     return Scaffold(
       body: Column(
         children: [
-          const ScreenHeader(eyebrow: 'Pizzalator', title: 'Dough'),
+          ScreenHeader(
+            eyebrow: 'Pizzalator',
+            title: 'Dough',
+            subtitle: active == null ? null : '${active.name}$edited',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                HeaderIconButton(
+                  icon: Icons.bookmark_border,
+                  label: 'Saved recipes',
+                  onPressed: () =>
+                      unawaited(Navigator.pushNamed(context, Routes.recipes)),
+                ),
+                HeaderIconButton(
+                  icon: Icons.article_outlined,
+                  label: 'Bake log',
+                  onPressed: () =>
+                      unawaited(Navigator.pushNamed(context, Routes.bakeLog)),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.only(top: 4, bottom: 20),
@@ -281,6 +308,7 @@ class _FlourCard extends ConsumerWidget {
     final t = context.text;
     final c = context.colors;
     final rows = ref.watch(recipeProvider.select((i) => i.flours));
+    final choices = ref.watch(flourChoicesProvider);
     final recipe = ref.read(recipeProvider.notifier);
     void set(List<FlourShare> next) =>
         recipe.update((i) => i.copyWith(flours: balanceFlours(next)));
@@ -305,6 +333,7 @@ class _FlourCard extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _FlourPicker(
+                    choices: choices,
                     value: row.flour,
                     onChanged: (f) => set(edit(k, FlourShare(f, row.sharePct))),
                   ),
@@ -341,6 +370,15 @@ class _FlourCard extends ConsumerWidget {
                 ],
               ),
           ],
+          // → Settings › Flours (mockups/Main.dc.html).
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextLink(
+              label: 'Manage flours · scan a bag',
+              onTap: () =>
+                  unawaited(Navigator.pushNamed(context, Routes.flours)),
+            ),
+          ),
           if (added != null)
             SecondaryButton(
               label: 'Add flour',
@@ -364,8 +402,13 @@ extension on Iterable<Flour> {
 /// Flour dropdown. The protein sits in its own trailing text so a long name
 /// truncates without hiding the number that drives hydration.
 class _FlourPicker extends StatelessWidget {
-  const _FlourPicker({required this.value, required this.onChanged});
+  const _FlourPicker({
+    required this.choices,
+    required this.value,
+    required this.onChanged,
+  });
 
+  final List<Flour> choices;
   final Flour value;
   final ValueChanged<Flour> onChanged;
 
@@ -373,10 +416,8 @@ class _FlourPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     final t = context.text;
-    final flours = [
-      ...Flour.presets,
-      if (!Flour.presets.contains(value)) value,
-    ];
+    // One item per value: a snapshot equal to a choice is that choice.
+    final flours = {...choices, value};
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -473,9 +514,16 @@ class _FormulaCard extends ConsumerWidget {
     final all = [...out.preferment, ...out.finalDough];
     double total(LineKind k) =>
         all.where((l) => l.kind == k).fold(0.0, (t, l) => t + l.grams);
-    double flour(String name) => all
-        .where((l) => l.kind == LineKind.flour && l.name == name)
-        .fold(0.0, (t, l) => t + l.grams);
+    // Blend row [k]: calc gives each part one flour line per row, in order.
+    // By position, not name: two flours may share a name.
+    List<Line> flours(List<Line> part) => [
+      for (final l in part)
+        if (l.kind == LineKind.flour) l,
+    ];
+    final prefFlours = flours(out.preferment),
+        mainFlours = flours(out.finalDough);
+    double flour(int k) =>
+        mainFlours[k].grams + (prefFlours.isEmpty ? 0 : prefFlours[k].grams);
     String Function(double) g(int decimals) =>
         (v) => '${v.toStringAsFixed(decimals)} g';
     final leaven = out.finalDough.firstWhere(
@@ -491,8 +539,8 @@ class _FormulaCard extends ConsumerWidget {
     final rows = [
       _Line('Flour', out.totalFlourG, g0),
       if (i.flours.length > 1)
-        for (final f in i.flours)
-          _Line('· ${f.flour.name}', flour(f.flour.name), g0, muted: true),
+        for (final (k, f) in i.flours.indexed)
+          _Line('· ${f.flour.name}', flour(k), g0, muted: true),
       _Line('Water', total(LineKind.water), g0, color: c.emberBright),
       _Line('Salt', total(LineKind.salt), g(1)),
       if (total(LineKind.oil) > 0) _Line('Oil', total(LineKind.oil), g(1)),

@@ -93,4 +93,49 @@ void main() {
     expect(style.foregroundColor!.resolve({}), c.onEmber);
     expect(style.side!.resolve({})!.color, c.sage);
   });
+
+  testWidgets('secondary alert is red on the alert tint (remove)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(SecondaryButton(label: 'Delete', alert: true, onPressed: () {})),
+    );
+    final style = tester
+        .widget<OutlinedButton>(find.byType(OutlinedButton))
+        .style!;
+    expect(style.backgroundColor!.resolve({}), c.alertTint);
+    expect(style.foregroundColor!.resolve({}), c.alert);
+    expect(style.side!.resolve({})!.color, c.alert);
+  });
+
+  testWidgets('text link: ember-bright caption, chevron, 44 px target', (
+    tester,
+  ) async {
+    var taps = 0;
+    await tester.pumpWidget(
+      host(TextLink(label: 'Read a photo', onTap: () => taps++)),
+    );
+    final text = tester.widget<Text>(find.text('Read a photo'));
+    expect(text.style!.color, c.emberBright);
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.chevron_right)).color,
+      c.emberBright,
+    );
+    expect(
+      tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.text('Read a photo'),
+                  matching: find.byType(ConstrainedBox),
+                )
+                .first,
+          )
+          .height,
+      greaterThanOrEqualTo(44),
+    );
+    expect(find.bySemanticsLabel('Read a photo'), findsOneWidget);
+    await tester.tap(find.text('Read a photo'));
+    expect(taps, 1);
+  });
 }

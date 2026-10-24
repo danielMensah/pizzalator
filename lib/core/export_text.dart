@@ -31,6 +31,15 @@ const _days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 String clockText(DateTime t) =>
     '${_days[t.weekday - 1]} ${_two(t.hour)}:${_two(t.minute)}';
 
+const _months = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/// "Fri 17 Oct" (bake log).
+String dayText(DateTime t) =>
+    '${_days[t.weekday - 1]} ${t.day} ${_months[t.month - 1]}';
+
 /// Absolute start when a bake time is set, else the offset from the start.
 String whenText(ScheduleItem item) {
   final at = item.at;

@@ -7,16 +7,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:pizzalator/app.dart';
+import 'package:pizzalator/core/bake_log.dart';
 import 'package:pizzalator/core/calc.dart';
 import 'package:pizzalator/core/export_text.dart';
+import 'package:pizzalator/core/oven.dart';
+import 'package:pizzalator/core/recipe_json.dart';
 import 'package:pizzalator/core/routine.dart';
 import 'package:pizzalator/core/timer_run.dart';
 import 'package:pizzalator/routes.dart';
 import 'package:pizzalator/services/json_store.dart';
 import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/state/bake_log.dart';
+import 'package:pizzalator/state/calibration.dart';
+import 'package:pizzalator/state/flours.dart';
+import 'package:pizzalator/state/oven.dart';
 import 'package:pizzalator/state/recipe.dart';
+import 'package:pizzalator/state/recipes.dart';
 import 'package:pizzalator/state/routine.dart';
 import 'package:pizzalator/state/timer_run.dart';
+import 'package:pizzalator/widgets/buttons.dart';
 
 import 'fakes.dart';
 
@@ -41,6 +50,10 @@ void main() {
       Routes.recipe,
       Routes.timers,
       Routes.routine,
+      Routes.flours,
+      Routes.recipes,
+      Routes.bakeLog,
+      Routes.logEntry,
     ]) {
       unawaited(nav.pushNamed(r));
       await tester.pumpAndSettle();
@@ -84,12 +97,28 @@ void main() {
         'presets': [defaultRoutine.toJson()..['name'] = 'Mine'],
         'selected': 1,
       };
+      store.data[floursStoreName] = [
+        const Flour('Doves strong', 13.5).toJson(),
+      ];
+      store.data[bakesStoreName] = [
+        BakeEntry(
+          id: 'b',
+          date: DateTime.utc(2026, 10, 17),
+          name: 'Friday NY',
+          inputs: const RecipeInputs(style: PizzaStyle.newYork),
+          oven: OvenSetup.homeSteel,
+        ).toJson(),
+      ];
+      store.data[hintsStoreName] = ['dough0:b'];
       saveRun();
       GoogleFonts.config.allowRuntimeFetching = true;
       await bootstrap(c);
       // Fonts come from the bundle only (FR8: no network).
       expect(GoogleFonts.config.allowRuntimeFetching, isFalse);
       expect(c.read(routineProvider).current.name, 'Mine');
+      expect(c.read(customFloursProvider).single.name, 'Doves strong');
+      expect(c.read(bakeLogProvider).single.name, 'Friday NY');
+      expect(c.read(hintDismissalsProvider), {'dough0:b'});
       expect(c.read(timerRunProvider)!.step.name, 'Rest');
       expect(notes.pending.values.single.title, 'Rest over');
     });
@@ -97,10 +126,66 @@ void main() {
     test('bootstrap never throws: a failing save or bad file', () async {
       saveRun();
       store.data[routineStoreName] = [1, 2];
+      store.data[floursStoreName] = 'junk';
+      store.data[recipesStoreName] = 'junk';
+      store.data[bakesStoreName] = 'junk';
+      store.data[hintsStoreName] = 'junk';
+      store.data[currentStoreName] = [1];
       store.failWrites = const FileSystemException('No space left on device');
       await bootstrap(c);
       expect(c.read(timerRunProvider), isNotNull);
       expect(c.read(routineProvider).presets, [defaultRoutine]);
+      expect(c.read(customFloursProvider), isEmpty);
+      expect(c.read(savedRecipesProvider), isEmpty);
+      expect(c.read(bakeLogProvider), isEmpty);
+      expect(c.read(hintDismissalsProvider), isEmpty);
+      expect(c.read(recipeProvider).style, PizzaStyle.neapolitan);
+      // Saving the working copy fails quietly too.
+      c.read(recipeProvider.notifier).setFlourG(600);
+      await pumpEventQueue();
+    });
+
+    test(
+      'bootstrap opens on the last-used recipe, then keeps it saved',
+      () async {
+        final friday = SavedRecipe(
+          id: 'f',
+          name: 'Friday NY',
+          inputs: const RecipeInputs(style: PizzaStyle.newYork),
+          oven: OvenSetup.homeStone,
+          savedAt: DateTime.utc(2026, 10, 17),
+        );
+        Object? wire(Object? json) => jsonDecode(jsonEncode(json));
+        store.data[recipesStoreName] = wire([friday.toJson()]);
+        store.data[currentStoreName] = wire({
+          'inputs': inputsToJson(friday.inputs),
+          'oven': ovenToJson(friday.oven),
+          'activeId': 'f',
+        });
+        await bootstrap(c);
+        expect(c.read(recipeProvider).style, PizzaStyle.newYork);
+        expect(c.read(ovenProvider).surface, Surface.stone);
+        expect(c.read(activeRecipeProvider)!.name, 'Friday NY');
+        expect(c.read(recipeDirtyProvider), isFalse);
+
+        Map<Object?, Object?> current() =>
+            store.data[currentStoreName]! as Map<Object?, Object?>;
+        c.read(recipeProvider.notifier).setFlourG(600);
+        await pumpEventQueue();
+        expect((current()['inputs']! as Map)['flourG'], 600);
+        c.read(ovenProvider.notifier).set(OvenSetup.outdoor);
+        await pumpEventQueue();
+        expect((current()['oven']! as Map)['kind'], 'outdoor');
+        c.read(activeRecipeIdProvider.notifier).set(null);
+        await pumpEventQueue();
+        expect(current()['activeId'], isNull);
+      },
+    );
+
+    test('no bootstrap, no saving of the working copy', () async {
+      c.read(recipeProvider.notifier).setFlourG(600);
+      await pumpEventQueue();
+      expect(store.data, isEmpty);
     });
 
     testWidgets('a live run opens on the timers; back lands on the dough', (
@@ -187,6 +272,117 @@ void main() {
       await tap(tester, 'Calculator');
       expect(find.text('Dough'), findsOneWidget);
       expect(find.text('Plan fermentation'), findsOneWidget);
+
+      // Settings › Flours off the flour card, a preset copied, and back.
+      await tap(tester, 'Manage flours · scan a bag');
+      expect(find.text('Flours'), findsOneWidget);
+      await tap(tester, 'US bread flour');
+      await tester.enterText(find.byKey(const ValueKey('name')), 'KA bread');
+      await tester.pump();
+      await tap(tester, 'Save flour');
+      expect(store.data[floursStoreName], hasLength(1));
+      await tap(tester, 'Calculator');
+      expect(find.text('Plan fermentation'), findsOneWidget);
+
+      // Saved recipes off the header: keep this one, open it again.
+      await tester.tap(find.byTooltip('Saved recipes'));
+      await tester.pumpAndSettle();
+      expect(find.text('Recipes'), findsOneWidget);
+      await tap(tester, 'Save current as new');
+      await tester.enterText(find.byType(TextField), 'Friday NY');
+      await tap(tester, 'Save recipe');
+      expect(store.data[recipesStoreName], hasLength(1));
+      await tap(tester, 'Friday NY');
+      expect(find.text('Plan fermentation'), findsOneWidget);
+      expect(find.text('Friday NY'), findsOneWidget);
+
+      // An edit marks it; Save changes on the Recipe screen clears the mark.
+      await tap(tester, 'Detroit');
+      expect(find.text('Friday NY · edited'), findsOneWidget);
+      await tap(tester, 'Plan fermentation');
+      await tap(tester, 'Build recipe');
+      await tester.ensureVisible(find.text('Save changes'));
+      await tap(tester, 'Save changes');
+      final saved = find.widgetWithText(SecondaryButton, 'Saved');
+      expect(tester.widget<SecondaryButton>(saved).onPressed, isNull);
+      expect(
+        c.read(savedRecipesProvider).single.inputs.style,
+        PizzaStyle.detroit,
+      );
+      await tester.ensureVisible(find.text('Fermentation'));
+      await tap(tester, 'Fermentation');
+      await tap(tester, 'Calculator');
+      expect(find.text('Friday NY'), findsOneWidget);
+      expect(find.text('Friday NY · edited'), findsNothing);
+
+      // Recipes again, left by its own back link.
+      await tester.tap(find.byTooltip('Saved recipes'));
+      await tester.pumpAndSettle();
+      await tap(tester, 'Calculator');
+      expect(find.text('Plan fermentation'), findsOneWidget);
+
+      // The bake log off the header: log this one, see it, edit it.
+      await tester.tap(find.byTooltip('Bake log'));
+      await tester.pumpAndSettle();
+      expect(find.text('0 BAKES'), findsOneWidget);
+      await tester.tap(find.byTooltip('Log a bake'));
+      await tester.pumpAndSettle();
+      expect(find.text('Log this bake'), findsOneWidget);
+      await tester.tap(find.byTooltip('4 stars'));
+      await tap(tester, 'Save bake');
+      expect(find.text('1 BAKE'), findsOneWidget);
+      expect(store.data[bakesStoreName], hasLength(1));
+      await tap(tester, 'Friday NY');
+      expect(find.text('Edit bake'), findsOneWidget);
+      await tap(tester, 'Bake log');
+      await tap(tester, 'Calculator');
+      expect(find.text('Plan fermentation'), findsOneWidget);
+
+      // And from the recipe's bake card: back lands on the log.
+      await tap(tester, 'Plan fermentation');
+      await tap(tester, 'Build recipe');
+      await tap(tester, 'Bake card');
+      await tester.ensureVisible(find.text('Log this bake'));
+      await tap(tester, 'Log this bake');
+      expect(find.text('Save bake'), findsOneWidget);
+      await tap(tester, 'Save bake');
+      expect(find.text('2 BAKES'), findsOneWidget);
+      // System Back goes where the header's "Calculator" does.
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Plan fermentation'), findsOneWidget);
+    });
+
+    testWidgets('two "too wet" bakes → a hint → Apply lowers hydration', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      final before = c.read(outputsProvider).hydrationPct;
+      await tester.tap(find.byTooltip('Bake log'));
+      await tester.pumpAndSettle();
+      for (final n in [1, 2]) {
+        await tester.tap(find.byTooltip('Log a bake'));
+        await tester.pumpAndSettle();
+        await tap(tester, 'too wet');
+        await tester.ensureVisible(find.text('Save bake'));
+        await tap(tester, 'Save bake');
+        expect(find.text('$n ${n == 1 ? 'BAKE' : 'BAKES'}'), findsOneWidget);
+        // One log is not enough.
+        expect(find.text('Apply −2 pp'), n == 1 ? findsNothing : findsOne);
+      }
+      expect(
+        find.textContaining('Suggest hydration ${pctText(before)}%'),
+        findsOneWidget,
+      );
+      await tap(tester, 'Apply −2 pp');
+      expect(c.read(outputsProvider).hydrationPct, r01(before - 2));
+      expect(find.text('Apply −2 pp'), findsNothing);
+      // Gone on the recipe too: no bakes at the new hydration yet.
+      await tap(tester, 'Calculator');
+      await tap(tester, 'Plan fermentation');
+      await tap(tester, 'Build recipe');
+      expect(find.textContaining('Calibration hint'), findsNothing);
+      expect(find.text(pctText(r01(before - 2))), findsOneWidget);
     });
 
     testWidgets('calculator, ferment and recipe show the same numbers', (

@@ -168,4 +168,80 @@ void main() {
       );
     });
   });
+
+  group('Flour', () {
+    const mine = Flour(
+      'Marriage’s wholemeal',
+      12.9,
+      wholegrain: true,
+      fibrePct: 9.2,
+      note: 'scanned',
+    );
+
+    test('json round trip, fibre and note optional', () {
+      expect(Flour.fromJson(mine.toJson()), mine);
+      expect(Flour.fromJson(mine.toJson()).note, 'scanned');
+      // A JSON file stores 13.0 as 13.
+      final plain = Flour.fromJson({'name': 'Plain', 'proteinPct': 10});
+      expect(plain, const Flour('Plain', 10));
+      expect([plain.fibrePct, plain.note, plain.wholegrain], [null, '', false]);
+    });
+
+    test('equal by name, protein, wholegrain and fibre; not by note', () {
+      expect(
+        mine,
+        const Flour(
+          'Marriage’s wholemeal',
+          12.9,
+          wholegrain: true,
+          fibrePct: 9.2,
+        ),
+      );
+      expect(
+        mine.hashCode,
+        const Flour(
+          'Marriage’s wholemeal',
+          12.9,
+          wholegrain: true,
+          fibrePct: 9.2,
+        ).hashCode,
+      );
+      expect(Flour.ukStrong, Flour.presets[4]);
+      for (final other in const [
+        Flour('Marriage’s wholemeal', 12.9, fibrePct: 9.2),
+        Flour('Marriage’s wholemeal', 13, wholegrain: true, fibrePct: 9.2),
+        Flour('Marriage’s wholemeal', 12.9, wholegrain: true),
+        Flour('Wholemeal', 12.9, wholegrain: true, fibrePct: 9.2),
+      ]) {
+        expect(mine, isNot(other));
+      }
+    });
+
+    test('fibre from 6 g reads as wholegrain (PRD 4.3)', () {
+      expect(kWholegrainFibreG, 6);
+      expect(wholegrainFromFibre(3.1), isFalse);
+      expect(wholegrainFromFibre(5.9), isFalse);
+      expect(wholegrainFromFibre(6), isTrue);
+      expect(wholegrainFromFibre(9.2), isTrue);
+    });
+
+    test('presets keep their names and carry the mockup notes', () {
+      expect(
+        {for (final f in Flour.presets) f.name: f.note},
+        {
+          'Italian 00 pizza': 'Caputo Pizzeria class',
+          'Italian 00 weak': 'supermarket, pasta grade',
+          'Italian 0 / Manitoba': '',
+          'UK plain': '',
+          'UK strong white': 'Sainsbury’s 13.7, Doves 12–14',
+          'UK very strong / Canadian': 'Waitrose Canadian 15',
+          'US all-purpose': '',
+          'US bread flour': 'King Arthur 12.7',
+          'Wholemeal': 'absorbs ~75%',
+          'Semolina rimacinata': '10–20% blend',
+        },
+      );
+      expect(Flour.presets.where((f) => f.fibrePct != null), isEmpty);
+    });
+  });
 }

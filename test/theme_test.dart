@@ -61,6 +61,12 @@ void main() {
     expect(theme.cardTheme.shape, isNull);
   });
 
+  test('sheet drag handle: line-strong, 40 × 4 (Material draws it)', () {
+    final sheet = pizzaTheme(Brightness.dark).bottomSheetTheme;
+    expect(sheet.dragHandleColor, PizzaColors.dark.lineStrong);
+    expect(sheet.dragHandleSize, const Size(40, 4));
+  });
+
   test('lerp snaps at midpoint, copyWith is identity', () {
     const d = PizzaColors.dark;
     const l = PizzaColors.light;

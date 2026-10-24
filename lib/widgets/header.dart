@@ -25,6 +25,7 @@ class ScreenHeader extends StatelessWidget {
     this.backLabel,
     this.onBack,
     this.eyebrow,
+    this.eyebrowColor,
     this.subtitle,
     this.trailing,
     this.action,
@@ -38,6 +39,9 @@ class ScreenHeader extends StatelessWidget {
   /// Defaults to popping the current route.
   final VoidCallback? onBack;
   final String? eyebrow;
+
+  /// Defaults to ember.
+  final Color? eyebrowColor;
   final String? subtitle;
 
   /// Key number, right-aligned on the title row.
@@ -99,7 +103,7 @@ class ScreenHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (eyebrow != null)
-                        SectionLabel(eyebrow!, color: c.ember),
+                        SectionLabel(eyebrow!, color: eyebrowColor ?? c.ember),
                       // Shrinks at large text sizes instead of splitting a
                       // word across lines.
                       Semantics(
@@ -123,6 +127,41 @@ class ScreenHeader extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 44 × 44 icon tile on the header's title row (mockups/Main.dc.html "Bake
+/// log"): surface fill, line border, 14 px corners. [label] is its tooltip
+/// and what TalkBack reads.
+class HeaderIconButton extends StatelessWidget {
+  const HeaderIconButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return IconButton(
+      tooltip: label,
+      onPressed: onPressed,
+      icon: Icon(icon, size: 22),
+      style: IconButton.styleFrom(
+        fixedSize: const Size.square(44),
+        minimumSize: const Size.square(44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        backgroundColor: c.surface,
+        foregroundColor: c.ink,
+        side: BorderSide(color: c.line),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }

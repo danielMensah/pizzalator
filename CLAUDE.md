@@ -23,10 +23,10 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 ## Build order
 
 1. Pure Dart calc core (`lib/core/`), no Flutter imports, golden tests per style. Done.
-2. Calculator, Ferment, Recipe + bake card screens. Done. 2b. Timers + routine editor. Done. 2c. Settings › Flours + scan.
-3. Save/load recipes, JSON export.
-4. Bake log + photos.
-5. Calibration hints.
+2. Calculator, Ferment, Recipe + bake card screens. Done. 2b. Timers + routine editor. Done. 2c. Settings › Flours + scan. Done.
+3. Save/load recipes, JSON export. Done (clipboard).
+4. Bake log + photos. Done.
+5. Calibration hints. Done.
 
 ## Conventions
 

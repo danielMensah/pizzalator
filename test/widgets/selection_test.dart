@@ -224,4 +224,24 @@ void main() {
     await tester.tap(tray);
     expect(picked, [2]);
   });
+
+  testWidgets('segmented: a tint for the selected one (bake outcomes)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        Segmented<int>(
+          options: const [(0, 'too wet'), (1, 'right')],
+          value: 0,
+          onChanged: (_) {},
+          selectedFill: c.alertTint,
+          selectedInk: c.alert,
+        ),
+      ),
+    );
+    expect(fillOf(tester, 'too wet').color, c.alertTint);
+    expect(tester.widget<Text>(find.text('too wet')).style!.color, c.alert);
+    expect(fillOf(tester, 'right').color, isNull);
+    expect(tester.widget<Text>(find.text('right')).style!.color, c.inkMuted);
+  });
 }

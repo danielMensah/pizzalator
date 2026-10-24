@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pizzalator/core/bake_log.dart';
 import 'package:pizzalator/core/calc.dart';
 import 'package:pizzalator/core/export_text.dart';
 import 'package:pizzalator/core/oven.dart';
 import 'package:pizzalator/routes.dart';
 import 'package:pizzalator/screens/recipe.dart';
+import 'package:pizzalator/state/bake_log.dart';
+import 'package:pizzalator/state/calibration.dart';
 import 'package:pizzalator/state/oven.dart';
 import 'package:pizzalator/state/recipe.dart';
+import 'package:pizzalator/state/recipes.dart';
 import 'package:pizzalator/services/json_store.dart';
 import 'package:pizzalator/services/notifications.dart';
 import 'package:pizzalator/state/schedule.dart';
@@ -50,8 +53,11 @@ Future<void> pump(
         initialRoute: Routes.recipe,
         routes: {
           Routes.calculator: (_) => const Text('Home page'),
-          Routes.recipe: (_) => const RecipeScreen(),
+          // Non-const so the constructor itself runs under coverage.
+          Routes.recipe: (_) => RecipeScreen(key: UniqueKey()),
           Routes.timers: (_) => const Text('Timers page'),
+          Routes.bakeLog: (_) => const Text('Bake log page'),
+          Routes.logEntry: (_) => const Text('Log entry page'),
         },
       ),
     ),
@@ -78,7 +84,10 @@ void main() {
   setUp(() {
     now = DateTime(2026, 6, 10, 10);
     c = ProviderContainer.test(
-      overrides: [clockProvider.overrideWithValue(() => now)],
+      overrides: [
+        clockProvider.overrideWithValue(() => now),
+        jsonStoreProvider.overrideWithValue(MemoryStore()),
+      ],
     );
   });
 
@@ -424,28 +433,29 @@ void main() {
     expect(find.text('OUTDOOR OVEN'), findsOneWidget);
   });
 
+  testWidgets('log this bake: the entry, over the bake log', (tester) async {
+    await pump(tester);
+    expect(find.text('Log this bake'), findsNothing);
+    await tapTab(tester, 'Bake card');
+    await tapVisible(tester, find.text('Log this bake'));
+    expect(find.text('Log entry page'), findsOneWidget);
+    // Back from the entry lands on the log, where the new bake shows.
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('Bake log page'), findsOneWidget);
+    // And Back from the log goes home, as its header link says.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Home page'), findsOneWidget);
+  });
+
   testWidgets('copy as plain text, with a toast', (tester) async {
-    String? copied;
-    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-      SystemChannels.platform,
-      (call) async {
-        if (call.method == 'Clipboard.setData') {
-          copied = (call.arguments as Map<Object?, Object?>)['text'] as String?;
-        }
-        return null;
-      },
-    );
-    addTearDown(
-      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        null,
-      ),
-    );
+    final clipboard = FakeClipboard()..install(tester);
     await pump(tester);
     await tapVisible(tester, find.text('Copy as text'));
     expect(find.text('Recipe copied'), findsOneWidget);
     expect(
-      copied,
+      clipboard.text,
       recipeText(
         inputs: c.read(recipeProvider),
         outputs: c.read(outputsProvider),
@@ -454,7 +464,7 @@ void main() {
         water: c.read(waterTempProvider),
       ),
     );
-    expect(copied, startsWith('Neapolitan · 7 × 30 cm'));
+    expect(clipboard.text, startsWith('Neapolitan · 7 × 30 cm'));
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
 
@@ -463,9 +473,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('7 × 11.8 in · '), findsOneWidget);
     await tapVisible(tester, find.text('Copy as text'));
-    expect(copied, startsWith('Neapolitan · 7 × 11.8 in'));
+    expect(clipboard.text, startsWith('Neapolitan · 7 × 11.8 in'));
     await tester.pump(const Duration(seconds: 3));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('save recipe: a name first; then Saved until edited', (
+    tester,
+  ) async {
+    bool enabled(String label) => tester
+        .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, label))
+        .enabled;
+    await pump(tester);
+    expect(find.text('Recipe'), findsOneWidget);
+    await tapVisible(tester, find.text('Save recipe'));
+    // Backing out saves nothing.
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(c.read(savedRecipesProvider), isEmpty);
+
+    await tapVisible(tester, find.text('Save recipe'));
+    await tester.enterText(find.byType(TextField), 'Friday NY');
+    await tester.tap(find.text('Save recipe').last);
+    await tester.pumpAndSettle();
+    // The header takes the recipe's name.
+    expect(find.text('Friday NY'), findsOneWidget);
+    expect(find.text('Recipe'), findsNothing);
+    expect(enabled('Saved'), isFalse);
+
+    recipe((i) => i.copyWith(flourG: 600));
+    await tester.pumpAndSettle();
+    expect(enabled('Save changes'), isTrue);
+    await tapVisible(tester, find.text('Save changes'));
+    expect(enabled('Saved'), isFalse);
+    expect(c.read(activeRecipeProvider)!.inputs.flourG, 600);
   });
 
   testWidgets('primary CTA starts the dough timers', (tester) async {
@@ -511,5 +552,57 @@ void main() {
   testWidgets('no log-bake entry point yet', (tester) async {
     await pump(tester);
     expect(find.text('Log this bake'), findsNothing);
+  });
+
+  group('calibration hint', () {
+    Future<void> twoBakes(Map<Outcome, int> outcomes) async {
+      for (final id in ['a', 'b']) {
+        await c
+            .read(bakeLogProvider.notifier)
+            .add(
+              BakeEntry(
+                id: id,
+                date: now,
+                name: 'Bake',
+                inputs: c.read(recipeProvider),
+                oven: c.read(ovenProvider),
+                outcomes: outcomes,
+              ),
+            );
+      }
+    }
+
+    testWidgets('above the tab content; Apply edits the header too', (
+      tester,
+    ) async {
+      await twoBakes(const {Outcome.dough: 2});
+      final hyd = c.read(outputsProvider).hydrationPct;
+      await pump(tester);
+      expect(find.text('CALIBRATION HINT · NEAPOLITAN'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Not now')).dy,
+        lessThan(tester.getTopLeft(find.text('FINAL DOUGH')).dy),
+      );
+      await tapTab(tester, 'Bake card');
+      expect(find.text('Apply +2 pp'), findsOneWidget);
+      await tester.tap(find.text('Apply +2 pp'));
+      await tester.pumpAndSettle();
+      expect(c.read(outputsProvider).hydrationPct, r01(hyd + 2));
+      expect(find.text(pctText(r01(hyd + 2))), findsOneWidget);
+      expect(find.textContaining('CALIBRATION HINT'), findsNothing);
+    });
+
+    testWidgets('Not now under reduced motion: gone at once, saved', (
+      tester,
+    ) async {
+      await twoBakes(const {Outcome.proof: 0});
+      await pump(tester, reduce: true);
+      expect(find.text('Apply +15%'), findsOneWidget);
+      await tester.tap(find.text('Not now'));
+      await tester.pump();
+      expect(find.textContaining('CALIBRATION HINT'), findsNothing);
+      expect(c.read(hintDismissalsProvider), {'proof0:b'});
+      expect(c.read(recipeProvider).yeastKnob, 1);
+    });
   });
 }

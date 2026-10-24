@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,11 +10,14 @@ import '../core/schedule.dart';
 import '../routes.dart';
 import '../state/oven.dart';
 import '../state/recipe.dart';
+import '../state/recipes.dart';
 import '../state/schedule.dart';
 import '../state/timer_run.dart';
 import '../state/units.dart';
 import '../theme/pizza_theme.dart';
 import '../widgets/widgets.dart';
+import 'bake_log.dart';
+import 'recipes.dart';
 
 /// Recipe and bake card: mockups/Recipe.dc.html.
 class RecipeScreen extends ConsumerStatefulWidget {
@@ -61,7 +66,7 @@ class _RecipeScreenState extends ConsumerState<RecipeScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ScreenHeader(
-            title: 'Recipe',
+            title: ref.watch(activeRecipeProvider)?.name ?? 'Recipe',
             backLabel: 'Fermentation',
             subtitle: summaryText(
               inputs,
@@ -90,6 +95,7 @@ class _RecipeScreenState extends ConsumerState<RecipeScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
               children: [
+                const CalibrationHints(),
                 ...switch (tab) {
                   _Tab.preferment => [
                     _ingredients(prefName, true, out.preferment),
@@ -105,10 +111,18 @@ class _RecipeScreenState extends ConsumerState<RecipeScreen> {
                   _Tab.bake => _bake(),
                 },
                 _gap,
-                SecondaryButton(
-                  label: 'Copy as text',
-                  icon: Icons.copy_outlined,
-                  onPressed: _copy,
+                Row(
+                  spacing: 10,
+                  children: [
+                    Expanded(
+                      child: SecondaryButton(
+                        label: 'Copy as text',
+                        icon: Icons.copy_outlined,
+                        onPressed: _copy,
+                      ),
+                    ),
+                    Expanded(child: _saveButton()),
+                  ],
                 ),
               ],
             ),
@@ -303,7 +317,28 @@ class _RecipeScreenState extends ConsumerState<RecipeScreen> {
           ],
         ),
       ),
+      _gap,
+      PrimaryButton(
+        label: 'Log this bake',
+        icon: Icons.edit_note,
+        compact: true,
+        onPressed: _logBake,
+      ),
     ];
+  }
+
+  /// Over the bake log, so Back and Save land where the new bake shows. The
+  /// log goes straight over the calculator, as from its header, so its
+  /// "Calculator" link and system Back agree.
+  void _logBake() {
+    unawaited(
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        Routes.bakeLog,
+        ModalRoute.withName(Routes.calculator),
+      ),
+    );
+    unawaited(Navigator.pushNamed(context, Routes.logEntry));
   }
 
   Future<void> _pickBakeAt() async {
@@ -330,6 +365,30 @@ class _RecipeScreenState extends ConsumerState<RecipeScreen> {
         .setBakeAt(
           DateTime(day.year, day.month, day.day, time.hour, time.minute),
         );
+  }
+
+  /// Save recipe (asks a name), Save changes, or a spent "Saved".
+  Widget _saveButton() {
+    if (ref.watch(activeRecipeProvider) == null) {
+      return SecondaryButton(
+        label: 'Save recipe',
+        icon: Icons.bookmark_add_outlined,
+        onPressed: () => unawaited(saveAsNew(context, ref)),
+      );
+    }
+    if (ref.watch(recipeDirtyProvider)) {
+      return SecondaryButton(
+        label: 'Save changes',
+        icon: Icons.bookmark_add_outlined,
+        onPressed: () =>
+            unawaited(ref.read(savedRecipesProvider.notifier).saveChanges()),
+      );
+    }
+    return const SecondaryButton(
+      label: 'Saved',
+      icon: Icons.bookmark_added_outlined,
+      success: true,
+    );
   }
 
   Future<void> _copy() async {
