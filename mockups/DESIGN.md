@@ -1,6 +1,6 @@
 # Pizzalator — Design Guidelines
 
-Mockups: the `.dc.html` files in this folder (one per screen) plus `canvas.json` (frame layout). Live canvas: https://claude.ai/artifact/XuJ1zbQAjXfsVx3gASPYiJ. Design system: `design-system/project/` (tokens, components, brand book) and https://claude.ai/artifact/XcWQBSgPqbYJuPU3DMNgYt.
+Mockups: the `.dc.html` files in this folder (one per screen) plus `canvas.json` (frame layout). Design system: `design-system/project/` (tokens, components, brand book).
 
 ## Screens
 
