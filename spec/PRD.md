@@ -220,6 +220,8 @@ After mixing, the dough goes through a fixed sequence of hands-on steps and cove
 - "pale" on home oven → suggest sugar/malt tip; "burnt bottom" on steel → suggest raising rack / lowering temp.
 Hints are one-tap apply; never silent.
 
+**Bake analysis** (on-device AI over the whole log, notes and photos): see `spec/bake-analysis.md`.
+
 ## 6. Functional requirements
 
 - FR1 Style switch re-applies defaults but keeps explicitly edited fields (badge + "reset to style").

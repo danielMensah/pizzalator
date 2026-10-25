@@ -4,7 +4,7 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 
 ## Read first
 
-- `spec/PRD.md` — the product spec. Formulas in §4 are the source of truth for the calc core.
+- `spec/PRD.md` — the product spec. Formulas in §4 are the source of truth for the calc core. `spec/bake-analysis.md` — the AI calibration feature.
 - `mockups/DESIGN.md` — design guidelines. Tokens in `mockups/design-system/project/tokens.json`.
 - `mockups/*.dc.html` — one screen mockup per file; match them when building UI.
 
@@ -27,6 +27,7 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 3. Save/load recipes, JSON export. Done (clipboard).
 4. Bake log + photos. Done.
 5. Calibration hints. Done.
+6. Bake analysis (on-device Gemini Nano over the log, rules-only fallback): `spec/bake-analysis.md`. Not started.
 
 ## Conventions
 
@@ -38,13 +39,13 @@ Pizza dough calculator. Flutter, Android first, personal use, no backend, no sto
 - Heuristic constants (hydration slope `k`, wholemeal 75%, yeast table) are named knobs, not magic numbers, and are marked `// ponytail: calibration knob`.
 - Prefer stdlib and already-installed packages. No new dependency for what a few lines do.
 - State: Riverpod 3 (`flutter_riverpod`), no code generation. `NotifierProvider` for mutable state, `Provider` for derived values (`lib/state/`). Widgets read state via `ConsumerWidget`; the calc core never imports Riverpod.
-- Entry point `lib/main.dart` is wiring only (JSON store on the docs dir, notifications, routine load + timer restore, `runApp`); everything testable lives in `lib/app.dart` and below.
+- Entry point `lib/main.dart` is wiring only (JSON and photo stores on the docs dir, `runApp` behind the launch splash while `bootstrap` loads); everything testable lives in `lib/app.dart` and below.
 
 ## Workflow: test first
 
 - Write the failing test before the implementation, run it, watch it fail, then write the minimum code to pass. Every behaviour change starts in `test/`.
-- Test layout mirrors `lib/`: `test/core/` (calc goldens), `test/state/` (providers via `ProviderContainer.test()`), `test/screens/` and `test/widgets/` (widget tests), `test/app_test.dart` (the whole flow through the real CTAs and back links, store and notifications faked).
-- Anything that writes through `jsonStoreProvider` or `notificationsProvider` must override them in tests (in-memory store: real file IO never completes in fake async).
+- Test layout mirrors `lib/`: `test/core/` (calc goldens), `test/state/` (providers via `ProviderContainer.test()`), `test/screens/` and `test/widgets/` (widget tests), `test/app_test.dart` (the whole flow through the real CTAs and back links, store and live timer faked).
+- Anything that writes through `jsonStoreProvider` or `liveTimerProvider` must override them in tests (in-memory store: real file IO never completes in fake async).
 - Line coverage gate: `dart run tool/check_coverage.dart` fails under 98%. Only genuinely untestable files are excluded, listed in that script (currently `lib/main.dart`). Do not lower the threshold; add tests or move logic out of the excluded file.
 - Widget tests set `GoogleFonts.config.allowRuntimeFetching = false` in `setUpAll`.
 - Lints: `analysis_options.yaml` = `flutter_lints` + strict casts/inference/raw types + extra rules. `flutter analyze` must report no issues before a commit.
