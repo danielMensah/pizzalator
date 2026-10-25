@@ -1,7 +1,7 @@
 // Shared fakes. Anything that writes through jsonStoreProvider or
-// notificationsProvider overrides them with these (CLAUDE.md); the label
-// scan overrides labelScannerProvider, bake photos photoStoreProvider;
-// clipboard tests install FakeClipboard.
+// liveTimerProvider overrides them with these (CLAUDE.md); the label scan
+// overrides labelScannerProvider, bake photos photoStoreProvider; clipboard
+// tests install FakeClipboard.
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -9,10 +9,10 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:pizzalator/core/timer_run.dart';
+import 'package:pizzalator/core/live_timer.dart';
 import 'package:pizzalator/services/json_store.dart';
 import 'package:pizzalator/services/label_scanner.dart';
-import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/live_timer.dart';
 import 'package:pizzalator/services/photos.dart';
 
 /// In memory, round-tripping through JSON like the real store: real file IO
@@ -42,40 +42,40 @@ class MemoryStore extends JsonStore {
   Future<void> keepBad(String name) async => bad[name] = data.remove(name);
 }
 
-class FakeNotifications implements Notifications {
-  final pending = <int, RunAlarm>{};
-  var asks = 0;
-  var cancels = 0;
+/// The native live notification in memory. [log] is what was tapped on it;
+/// stop() hands that back and clears it, as the real one does.
+class FakeLiveTimer implements LiveTimer {
+  var asks = 0, chimes = 0, stops = 0;
 
-  /// Ids whose scheduleAt throws, like a refused exact alarm.
-  final failIds = <int>{};
+  /// What show() got, until stop().
+  ({List<List<LiveFrame>> legs, DateTime startedAt, DateTime? pausedAt})? shown;
+  final log = <LiveAction>[];
 
-  @override
-  Future<void> init() async {}
+  /// When set, stop() waits on it: the platform call is still out.
+  Completer<void>? gate;
 
   @override
   Future<void> requestPermission() async => asks++;
 
-  /// Yields first, as a platform call does: the reschedule queue must keep
-  /// one reschedule from landing inside another.
   @override
-  Future<void> scheduleAt(
-    int id,
-    DateTime at,
-    String title,
-    String body,
-  ) async {
-    await Future<void>.value();
-    if (failIds.contains(id)) throw StateError('alarm $id refused');
-    pending[id] = RunAlarm(at, title, body);
+  Future<void> show(
+    List<List<LiveFrame>> legs,
+    DateTime startedAt, {
+    DateTime? pausedAt,
+  }) async => shown = (legs: legs, startedAt: startedAt, pausedAt: pausedAt);
+
+  @override
+  Future<List<LiveAction>> stop() async {
+    await gate?.future;
+    stops++;
+    shown = null;
+    final taps = [...log];
+    log.clear();
+    return taps;
   }
 
   @override
-  Future<void> cancelAll() async {
-    await Future<void>.value();
-    cancels++;
-    pending.clear();
-  }
+  Future<void> chime() async => chimes++;
 }
 
 /// Hands back [next] (null: the user backed out), or throws [error].

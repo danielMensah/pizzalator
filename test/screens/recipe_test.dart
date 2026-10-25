@@ -14,7 +14,7 @@ import 'package:pizzalator/state/oven.dart';
 import 'package:pizzalator/state/recipe.dart';
 import 'package:pizzalator/state/recipes.dart';
 import 'package:pizzalator/services/json_store.dart';
-import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/live_timer.dart';
 import 'package:pizzalator/state/schedule.dart';
 import 'package:pizzalator/state/timer_run.dart';
 import 'package:pizzalator/state/units.dart';
@@ -523,7 +523,7 @@ void main() {
       overrides: [
         clockProvider.overrideWithValue(() => now),
         jsonStoreProvider.overrideWithValue(MemoryStore()),
-        notificationsProvider.overrideWithValue(FakeNotifications()),
+        liveTimerProvider.overrideWithValue(FakeLiveTimer()),
       ],
     );
     await tester.runAsync(() => c.read(timerRunProvider.notifier).start());

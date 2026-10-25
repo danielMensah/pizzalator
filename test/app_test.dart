@@ -13,10 +13,11 @@ import 'package:pizzalator/core/export_text.dart';
 import 'package:pizzalator/core/oven.dart';
 import 'package:pizzalator/core/recipe_json.dart';
 import 'package:pizzalator/core/routine.dart';
+import 'package:pizzalator/core/live_timer.dart';
 import 'package:pizzalator/core/timer_run.dart';
 import 'package:pizzalator/routes.dart';
 import 'package:pizzalator/services/json_store.dart';
-import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/live_timer.dart';
 import 'package:pizzalator/state/bake_log.dart';
 import 'package:pizzalator/state/calibration.dart';
 import 'package:pizzalator/state/flours.dart';
@@ -65,17 +66,17 @@ void main() {
 
   group('launch', () {
     late MemoryStore store;
-    late FakeNotifications notes;
+    late FakeLiveTimer live;
     late ProviderContainer c;
     final now = DateTime.now();
 
     setUp(() {
       store = MemoryStore();
-      notes = FakeNotifications();
+      live = FakeLiveTimer();
       c = ProviderContainer.test(
         overrides: [
           jsonStoreProvider.overrideWithValue(store),
-          notificationsProvider.overrideWithValue(notes),
+          liveTimerProvider.overrideWithValue(live),
         ],
       );
     });
@@ -92,7 +93,7 @@ void main() {
       ),
     );
 
-    test('bootstrap brings back the routine and the run, alarms set', () async {
+    test('bootstrap brings back the routine and the run', () async {
       store.data[routineStoreName] = {
         'presets': [defaultRoutine.toJson()..['name'] = 'Mine'],
         'selected': 1,
@@ -120,7 +121,7 @@ void main() {
       expect(c.read(bakeLogProvider).single.name, 'Friday NY');
       expect(c.read(hintDismissalsProvider), {'dough0:b'});
       expect(c.read(timerRunProvider)!.step.name, 'Rest');
-      expect(notes.pending.values.single.title, 'Rest over');
+      expect(live.stops, 1, reason: 'the notification is taken back');
     });
 
     test('bootstrap never throws: a failing save or bad file', () async {
@@ -206,18 +207,124 @@ void main() {
     });
   });
 
+  group('live notification', () {
+    late DateTime now;
+    late MemoryStore store;
+    late FakeLiveTimer live;
+    late ProviderContainer c;
+    const rest = RoutineStep(name: 'Rest', kind: StepKind.rest, minutes: 30);
+    const fold = RoutineStep(name: 'Fold', kind: StepKind.active, minutes: 2);
+
+    setUp(() {
+      now = DateTime(2026, 6, 10, 9);
+      store = MemoryStore();
+      live = FakeLiveTimer();
+      c = ProviderContainer.test(
+        overrides: [
+          jsonStoreProvider.overrideWithValue(store),
+          liveTimerProvider.overrideWithValue(live),
+          clockProvider.overrideWithValue(() => now),
+        ],
+      );
+    });
+
+    DateTime at(int minutes) => now.add(Duration(minutes: minutes));
+
+    /// What Android reports going to the background and coming back.
+    const away = [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+    ];
+    const back = [
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ];
+
+    void lifecycle(WidgetTester tester, List<AppLifecycleState> states) {
+      for (final s in states) {
+        tester.binding.handleAppLifecycleStateChanged(s);
+      }
+    }
+
+    Future<void> pumpApp(WidgetTester tester) async {
+      // The listener is gone by then; later tests start resumed.
+      addTearDown(
+        () => tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        ),
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(container: c, child: const PizzalatorApp()),
+      );
+    }
+
+    /// A run as if saved, brought back as on launch.
+    Future<void> put(TimerRun? r) async {
+      store.data[timerRunStoreName] = jsonDecode(jsonEncode(r?.toJson()));
+      await c.read(timerRunProvider.notifier).restore();
+    }
+
+    testWidgets('hidden, the notification has the run; back, it replays', (
+      tester,
+    ) async {
+      await pumpApp(tester);
+      await put(TimerRun(steps: const [rest, fold], endsAt: at(30)));
+      lifecycle(tester, away);
+      await tester.pump();
+      expect(live.shown!.legs.first.first.title, 'Rest');
+      live.log.add(LiveAction(LiveTap.pause, at(10)));
+      now = at(20);
+      lifecycle(tester, back);
+      await tester.pump();
+      expect(live.shown, isNull);
+      expect(c.read(timerRunProvider)!.left, const Duration(minutes: 20));
+      // The shade pulled down: still on screen, no notification.
+      lifecycle(tester, const [AppLifecycleState.inactive]);
+      await tester.pump();
+      expect(live.shown, isNull);
+    });
+
+    testWidgets('a timer end dings once, on any screen', (tester) async {
+      await pumpApp(tester);
+      expect(find.text('Dough'), findsOneWidget, reason: 'the calculator');
+      await put(TimerRun(steps: const [rest, fold], endsAt: at(1)));
+      await tester.pump(const Duration(seconds: 1));
+      expect(live.chimes, 0);
+      now = at(1);
+      await tester.pump(const Duration(seconds: 1));
+      expect(live.chimes, 1);
+      now = now.add(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+      expect(live.chimes, 1);
+      // Hidden, the notification rings instead.
+      await put(TimerRun(steps: const [rest, fold], endsAt: at(1)));
+      lifecycle(tester, away);
+      now = at(2);
+      await tester.pump(const Duration(seconds: 2));
+      expect(live.chimes, 1);
+      // Ended: no run, no ticks.
+      lifecycle(tester, back);
+      await tester.pump();
+      await c.read(timerRunProvider.notifier).stop();
+      await tester.pump(const Duration(seconds: 2));
+      expect(live.chimes, 1);
+    });
+  });
+
   group('real flow', () {
     late MemoryStore store;
-    late FakeNotifications notes;
+    late FakeLiveTimer live;
     late ProviderContainer c;
 
     setUp(() {
       store = MemoryStore();
-      notes = FakeNotifications();
+      live = FakeLiveTimer();
       c = ProviderContainer.test(
         overrides: [
           jsonStoreProvider.overrideWithValue(store),
-          notificationsProvider.overrideWithValue(notes),
+          liveTimerProvider.overrideWithValue(live),
         ],
       );
     });
@@ -251,11 +358,11 @@ void main() {
       await tap(tester, 'Start dough timers');
       expect(find.text('Dough routine'), findsOneWidget);
 
-      // Starting the run goes through the fake store and notifications.
+      // Starting the run goes through the fake store and notification.
       await tap(tester, 'Start');
       expect(c.read(timerRunProvider), isNotNull);
       expect(store.data[timerRunStoreName], isNotNull);
-      expect(notes.asks, 1);
+      expect(live.asks, 1);
 
       await tap(tester, 'Edit routine');
       expect(find.text('Routine'), findsOneWidget);

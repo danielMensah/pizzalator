@@ -5,21 +5,17 @@ import 'package:path_provider/path_provider.dart';
 import 'app.dart';
 import 'screens/splash.dart';
 import 'services/json_store.dart';
-import 'services/notifications.dart';
 import 'services/photos.dart';
 
-/// Wiring only. No time zone database: notifications are scheduled as UTC
-/// instants (see Notifications.scheduleAt).
+/// Wiring only. The live timer notification needs no setup: its provider
+/// already gives the real platform channel.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final notifications = Notifications();
-  await notifications.init();
   final docs = await getApplicationDocumentsDirectory();
   final container = ProviderContainer(
     overrides: [
       jsonStoreProvider.overrideWithValue(JsonStore(docs)),
       photoStoreProvider.overrideWithValue(PhotoStore(docs)),
-      notificationsProvider.overrideWithValue(notifications),
     ],
   );
   runApp(

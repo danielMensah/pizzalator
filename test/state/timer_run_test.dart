@@ -1,12 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pizzalator/core/live_timer.dart';
 import 'package:pizzalator/core/presets.dart';
 import 'package:pizzalator/core/routine.dart';
 import 'package:pizzalator/core/timer_run.dart';
 import 'package:pizzalator/services/json_store.dart';
-import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/live_timer.dart';
 import 'package:pizzalator/state/recipe.dart';
 import 'package:pizzalator/state/timer_run.dart';
 
@@ -23,17 +25,17 @@ void main() {
   DateTime at(int minutes) => t0.add(Duration(minutes: minutes));
   late DateTime now;
   late MemoryStore store;
-  late FakeNotifications notes;
+  late FakeLiveTimer live;
   late ProviderContainer c;
 
   setUp(() {
     now = t0;
     store = MemoryStore();
-    notes = FakeNotifications();
+    live = FakeLiveTimer();
     c = ProviderContainer.test(
       overrides: [
         jsonStoreProvider.overrideWithValue(store),
-        notificationsProvider.overrideWithValue(notes),
+        liveTimerProvider.overrideWithValue(live),
         clockProvider.overrideWithValue(() => now),
       ],
     );
@@ -43,12 +45,15 @@ void main() {
   TimerRunNotifier n() => c.read(timerRunProvider.notifier);
   Map<String, Object?> saved() =>
       store.data[timerRunStoreName]! as Map<String, Object?>;
-  List<DateTime> alarmTimes() => [
-    for (final i in notes.pending.keys.toList()..sort()) notes.pending[i]!.at,
-  ];
 
   Future<void> saveRun(TimerRun r) async =>
       store.data[timerRunStoreName] = jsonDecode(jsonEncode(r.toJson()));
+
+  /// A rest A that ends at 30, then rest B (chained) and Fold.
+  Future<void> restoreRests() async {
+    await saveRun(TimerRun(steps: const [restA, restB, fold], endsAt: at(30)));
+    await n().restore();
+  }
 
   test('clock defaults to the wall clock', () {
     final real = ProviderContainer.test().read(clockProvider)();
@@ -76,55 +81,46 @@ void main() {
     expect(s()!.index, 0);
     expect(s()!.phaseAt(now), RunPhase.ready);
     expect(saved()['index'], 0);
-    expect(notes.asks, 1);
-    expect(notes.cancels, 1);
-    expect(notes.pending, isEmpty);
+    expect(live.asks, 1);
+    expect(live.shown, isNull, reason: 'on screen: no notification');
     await n().start();
-    expect(notes.asks, 1);
+    expect(live.asks, 1);
   });
 
-  test('next starts the rest and schedules its end', () async {
+  test('next starts the rest and saves it', () async {
     await n().start();
     now = at(4);
     await n().next();
     expect(s()!.index, 1);
     expect(s()!.endsAt, at(34));
     expect(saved()['index'], 1);
-    final a = notes.pending[0]!;
-    expect(a.at, at(34));
-    expect(a.title, 'Rest over');
-    expect(a.body, 'Next: Fold in bowl 4–6×');
   });
 
-  test('pause, resume and +5 reschedule', () async {
+  test('pause, resume and +5 are saved', () async {
     await n().start();
     await n().next();
     now = at(10);
     await n().pause();
     expect(s()!.phaseAt(now), RunPhase.paused);
-    expect(notes.pending, isEmpty);
+    expect(saved()['leftMs'], const Duration(minutes: 20).inMilliseconds);
     now = at(40);
     await n().start();
-    expect(alarmTimes(), [at(60)]);
+    expect(s()!.endsAt, at(60));
     await n().extend();
-    expect(alarmTimes(), [at(65)]);
     expect(saved()['endsAt'], at(65).millisecondsSinceEpoch);
   });
 
-  test('auto-start setting is saved and rescheduled', () async {
+  test('auto-start setting is saved', () async {
     await n().start();
-    await n().next(); // rest A, 30 min, then Fold (untimed)
+    await n().next();
     await n().setAutoStart(true);
     expect(s()!.autoStart, isTrue);
     expect(saved()['autoStart'], isTrue);
-    expect(alarmTimes(), [at(30)]);
   });
 
-  test('tick saves automatic transitions, leaves alarms alone', () async {
-    await saveRun(TimerRun(steps: const [restA, restB, fold], endsAt: at(30)));
-    await n().restore();
+  test('tick saves automatic transitions only', () async {
+    await restoreRests();
     final writes = store.writes;
-    final cancels = notes.cancels;
     now = at(10);
     await n().tick();
     expect(store.writes, writes, reason: 'nothing changed');
@@ -132,18 +128,43 @@ void main() {
     await n().tick();
     expect(s()!.index, 1);
     expect(saved()['index'], 1);
-    expect(notes.cancels, cancels);
+  });
+
+  test('tick chimes each timer end once, chained ones too', () async {
+    await restoreRests();
+    now = at(29);
+    await n().tick();
+    expect(live.chimes, 0);
+    now = at(30);
+    await n().tick();
+    expect(live.chimes, 1);
+    now = at(31);
+    await n().tick();
+    expect(live.chimes, 1);
+    now = at(45);
+    await n().tick();
+    expect(live.chimes, 2);
+    now = at(60);
+    await n().tick();
+    expect(live.chimes, 2, reason: 'Fold waits; nothing else ends');
+  });
+
+  test('the first tick after launch does not chime for the past', () async {
+    await saveRun(TimerRun(steps: const [restA, fold], endsAt: at(30)));
+    now = at(40);
+    await n().restore();
+    await n().tick();
+    expect(live.chimes, 0);
   });
 
   test('actions apply on the settled run', () async {
-    await saveRun(TimerRun(steps: const [restA, restB, fold], endsAt: at(30)));
-    await n().restore();
+    await restoreRests();
     now = at(50); // rest B ended at 45, Fold waits
     await n().next();
     expect(s()!.index, 2);
   });
 
-  test('restore catches up after a kill and reschedules', () async {
+  test('restore catches up after a kill', () async {
     await saveRun(
       TimerRun(steps: const [restA, restB, restA, fold], endsAt: at(30)),
     );
@@ -152,8 +173,17 @@ void main() {
     expect(s()!.index, 2);
     expect(s()!.endsAt, at(75));
     expect(saved()['index'], 2);
-    expect(alarmTimes(), [at(75)]);
-    expect(notes.pending[0]!.body, 'Next: Fold');
+  });
+
+  test('restore takes back the notification and replays its taps', () async {
+    // Killed while hidden; Pause was tapped on the notification at 10.
+    await saveRun(TimerRun(steps: const [restA, fold], endsAt: at(30)));
+    live.log.add(LiveAction(LiveTap.pause, at(10)));
+    now = at(50);
+    await n().restore();
+    expect(live.stops, 1);
+    expect(s()!.left, const Duration(minutes: 20));
+    expect(saved()['leftMs'], const Duration(minutes: 20).inMilliseconds);
   });
 
   test('restore ignores a missing or corrupt file', () async {
@@ -162,7 +192,7 @@ void main() {
     store.data[timerRunStoreName] = {'steps': 'nope'};
     await n().restore();
     expect(s(), isNull);
-    expect(notes.cancels, 0);
+    expect(live.stops, 2, reason: 'a stale notification goes anyway');
   });
 
   test('next on the last step clears the run', () async {
@@ -172,39 +202,128 @@ void main() {
     expect(s(), isNull);
     expect(store.data[timerRunStoreName], isNull);
     expect(store.data.containsKey(timerRunStoreName), isTrue);
-    expect(notes.pending, isEmpty);
   });
 
-  test('reschedules run in call order', () async {
-    // next() schedules two alarms (rest to rest), pause() right after none.
-    // Unserialised, the first reschedule's alarms land after the second
-    // one's cancel and ring for a paused timer.
-    await saveRun(const TimerRun(steps: [fold, restA, restB, fold]));
-    await n().restore();
-    final a = n().next();
-    final b = n().pause();
-    await Future.wait([a, b]);
-    expect(s()!.phaseAt(now), RunPhase.paused);
-    expect(notes.pending, isEmpty);
-  });
-
-  test('a refused alarm does not stop the others or throw', () async {
-    await saveRun(const TimerRun(steps: [fold, restA, restB, fold]));
-    await n().restore();
-    notes.failIds.add(0);
-    await n().next();
-    expect(notes.pending.keys, [1]);
-    expect(notes.pending[1]!.at, at(45));
-  });
-
-  test('stop ends the run, clears its file and its alarms', () async {
-    await saveRun(TimerRun(steps: const [restA, restB, fold], endsAt: at(30)));
-    await n().restore();
-    expect(notes.pending, isNotEmpty);
+  test('stop ends the run and clears its file', () async {
+    await restoreRests();
     await n().stop();
     expect(s(), isNull);
     expect(store.data[timerRunStoreName], isNull);
-    expect(notes.pending, isEmpty);
+  });
+
+  group('hidden', () {
+    test('background hands the settled run to the notification', () async {
+      await restoreRests();
+      now = at(31);
+      await n().background();
+      final shown = live.shown!;
+      expect(shown.startedAt, at(31));
+      expect(shown.pausedAt, isNull);
+      expect(
+        jsonEncode(shown.legs),
+        jsonEncode(liveLegs(s()!, at(31))),
+        reason: 'laid out from the run as it is now',
+      );
+      expect(s()!.index, 1);
+      expect(saved()['index'], 1);
+    });
+
+    test('background while paused starts the notification paused', () async {
+      await restoreRests();
+      now = at(10);
+      await n().pause();
+      now = at(12);
+      await n().background();
+      expect(live.shown!.pausedAt, at(12));
+      expect(live.shown!.legs.first.first.end, const Duration(minutes: 20));
+    });
+
+    test('background chimes an end the last tick missed', () async {
+      await restoreRests();
+      now = at(29);
+      await n().tick();
+      now = at(30);
+      await n().background();
+      expect(live.chimes, 1);
+      expect(live.shown!.legs.first.first.title, 'Rest B');
+    });
+
+    test('a tick before the taps are back does not settle', () async {
+      await restoreRests();
+      now = at(5);
+      await n().background();
+      live
+        ..log.add(LiveAction(LiveTap.pause, at(10)))
+        ..gate = Completer();
+      now = at(40);
+      final back = n().foreground();
+      await n().tick();
+      expect(s()!.index, 0, reason: 'still the run the notification had');
+      live.gate!.complete();
+      await back;
+      expect(s()!.index, 0);
+      expect(s()!.left, const Duration(minutes: 20));
+    });
+
+    test('ticks neither save nor chime while hidden', () async {
+      await restoreRests();
+      await n().background();
+      final writes = store.writes;
+      now = at(46);
+      await n().tick();
+      expect(store.writes, writes);
+      expect(live.chimes, 0);
+      expect(s()!.index, 0);
+    });
+
+    test('foreground replays the taps, settles and saves', () async {
+      await restoreRests();
+      now = at(5);
+      await n().background();
+      live.log.addAll([
+        LiveAction(LiveTap.pause, at(10)), // 20 left
+        LiveAction(LiveTap.resume, at(18)), // rest A ends at 38
+      ]);
+      now = at(40);
+      await n().foreground();
+      expect(live.shown, isNull);
+      expect(s()!.index, 1);
+      expect(s()!.endsAt, at(53), reason: 'rest B chained at 38');
+      expect(saved()['endsAt'], at(53).millisecondsSinceEpoch);
+    });
+
+    test('foreground: no chime for ends while hidden', () async {
+      await restoreRests();
+      now = at(29);
+      await n().tick();
+      await n().background();
+      now = at(31);
+      await n().foreground();
+      await n().tick();
+      expect(live.chimes, 0, reason: 'the notification rang it');
+      now = at(45);
+      await n().tick();
+      expect(live.chimes, 1);
+    });
+
+    test('Finish on the notification ends the run', () async {
+      await saveRun(const TimerRun(steps: [fold]));
+      await n().restore();
+      await n().background();
+      live.log.add(LiveAction(LiveTap.next, at(3)));
+      now = at(4);
+      await n().foreground();
+      expect(s(), isNull);
+      expect(store.data[timerRunStoreName], isNull);
+    });
+
+    test('no run: nothing shown, nothing saved', () async {
+      await n().background();
+      expect(live.shown, isNull);
+      await n().foreground();
+      expect(s(), isNull);
+      expect(store.writes, 0);
+    });
   });
 
   test('no run: tick and actions do nothing', () async {

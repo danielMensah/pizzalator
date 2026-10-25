@@ -238,25 +238,12 @@ void main() {
     expect(run([restA]).endedBetween(t0, at(60)), isFalse);
   });
 
-  group('alarms', () {
-    test('one per timer end in the automatic chain', () {
-      final r = run([restA, restB, knead], endsAt: at(30));
-      final a = r.alarms(at(5));
-      expect(a.map((x) => x.at), [at(30), at(45)]);
-      expect(a.map((x) => x.title), ['Rest over', 'Rest over']);
-      expect(a.map((x) => x.body), ['Next: Rest B', 'Next: Knead']);
-    });
-
-    test('settles first: elapsed ends are not alarmed', () {
-      final r = run([restA, restB, knead], endsAt: at(30));
-      expect(r.alarms(at(31)).map((x) => x.at), [at(45)]);
-      expect(r.alarms(at(46)), isEmpty);
-    });
-
-    test('active timer end and routine end', () {
-      final a = run([knead], endsAt: at(10)).alarms(t0).single;
-      expect(a.title, 'Knead done');
-      expect(a.body, 'Routine done');
+  group('alarm: what a timer end is called', () {
+    test('rest and active ends, then the next step or the routine end', () {
+      final r = run([restA, knead], endsAt: at(30));
+      expect((r.alarm.title, r.alarm.body), ('Rest over', 'Next: Knead'));
+      final k = run([knead], endsAt: at(10)).alarm;
+      expect((k.title, k.body), ('Knead done', 'Routine done'));
     });
 
     test('cold plan: into the fridge, then take out', () {
@@ -264,36 +251,14 @@ void main() {
         [bulk, divide],
         const [Stage(2, 20), Stage(24, 4)],
       ).start(t0);
-      expect(
-        [for (final a in r.alarms(t0)) (a.at, a.title, a.body)],
-        [
-          (at(120), 'Into the fridge', 'Next: Fridge'),
-          (at(1560), 'Take out of fridge', 'Next: Divide'),
-        ],
-      );
+      expect(r.alarm.title, 'Into the fridge');
+      expect(r.alarm.body, 'Next: Fridge');
+      final out = r.settle(at(120)).alarm;
+      expect((out.title, out.body), ('Take out of fridge', 'Next: Divide'));
     });
 
-    test('cold bound step says take out of fridge', () {
-      final r = run([bulk, divide], endsAt: at(1440), cold: true);
-      expect(r.alarms(t0).single.title, 'Take out of fridge');
-      final warm = run([bulk, divide], endsAt: at(240));
-      expect(warm.alarms(t0).single.title, 'Rest over');
-    });
-
-    test('auto-start chains through to the untimed step', () {
-      final r = run(
-        [restA, knead, restB, mix],
-        endsAt: at(30),
-        autoStart: true,
-      );
-      expect(r.alarms(t0).map((x) => x.at), [at(30), at(40), at(55)]);
-      expect(r.alarms(t0)[1].title, 'Knead done');
-    });
-
-    test('nothing pending when paused, ready or ended', () {
-      expect(run([restA], left: min).alarms(t0), isEmpty);
-      expect(run([knead]).alarms(t0), isEmpty);
-      expect(run([restA, mix], endsAt: at(30)).alarms(at(31)), isEmpty);
+    test('a warm bound step is just a rest', () {
+      expect(run([bulk, divide], endsAt: at(240)).alarm.title, 'Rest over');
     });
   });
 

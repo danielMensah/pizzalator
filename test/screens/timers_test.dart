@@ -10,7 +10,7 @@ import 'package:pizzalator/core/timer_run.dart';
 import 'package:pizzalator/routes.dart';
 import 'package:pizzalator/screens/timers.dart';
 import 'package:pizzalator/services/json_store.dart';
-import 'package:pizzalator/services/notifications.dart';
+import 'package:pizzalator/services/live_timer.dart';
 import 'package:pizzalator/state/timer_run.dart';
 import 'package:pizzalator/theme/pizza_theme.dart';
 import 'package:pizzalator/widgets/widgets.dart';
@@ -35,7 +35,7 @@ void main() {
     c = ProviderContainer.test(
       overrides: [
         jsonStoreProvider.overrideWithValue(store),
-        notificationsProvider.overrideWithValue(FakeNotifications()),
+        liveTimerProvider.overrideWithValue(FakeLiveTimer()),
         clockProvider.overrideWithValue(() => now),
       ],
     );

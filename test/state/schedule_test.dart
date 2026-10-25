@@ -187,7 +187,7 @@ void main() {
             index: k,
             endsAt: end,
           );
-          rings[r.alarms(t).first.title] = end;
+          rings[r.alarm.title] = end;
           t = end;
         }
         final why = [for (final s in plan) '${s.hours}@${s.tempC}'].join(' ');

@@ -26,9 +26,9 @@ import 'theme/pizza_theme.dart';
 
 /// Launch, before the first frame: bundled fonts only, saved routine,
 /// flours, recipes, bake log, hint dismissals, the last working copy and timer
-/// run back, alarms rescheduled (FR10); from then on the working copy is saved
-/// on every change (PRD §5). Never throws: an unreadable file, a full disk or a
-/// refused alarm must not keep the app on its launch screen.
+/// run back, with the taps made on its notification (FR10); from then on the
+/// working copy is saved on every change (PRD §5). Never throws: an unreadable
+/// file or a full disk must not keep the app on its launch screen.
 Future<void> bootstrap(ProviderContainer c) async {
   configureFonts();
   final recipes = c.read(savedRecipesProvider.notifier);
@@ -53,11 +53,64 @@ Future<void> bootstrap(ProviderContainer c) async {
     ..listen<Object?>(activeRecipeIdProvider, save);
 }
 
-class PizzalatorApp extends ConsumerWidget {
+/// Out of sight, the live notification runs the timers; on screen, a 1 s
+/// tick chimes their ends on any screen.
+class PizzalatorApp extends ConsumerStatefulWidget {
   const PizzalatorApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PizzalatorApp> createState() => _PizzalatorAppState();
+}
+
+class _PizzalatorAppState extends ConsumerState<PizzalatorApp> {
+  late final AppLifecycleListener _life;
+  Timer? _ticker;
+  var _shown = true;
+
+  TimerRunNotifier get _run => ref.read(timerRunProvider.notifier);
+
+  @override
+  void initState() {
+    super.initState();
+    _life = AppLifecycleListener(
+      onHide: () => _show(false, _run.background),
+      onShow: () => _show(true, _run.foreground),
+    );
+    ref.listenManual(
+      timerRunProvider,
+      (_, _) => _syncTicker(),
+      fireImmediately: true,
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    _life.dispose();
+    super.dispose();
+  }
+
+  void _show(bool shown, Future<void> Function() handOver) {
+    _shown = shown;
+    _syncTicker();
+    unawaited(handOver());
+  }
+
+  /// Ticks only while shown and a run exists.
+  void _syncTicker() {
+    final on = _shown && ref.read(timerRunProvider) != null;
+    if (on == (_ticker != null)) return;
+    _ticker?.cancel();
+    _ticker = on
+        ? Timer.periodic(
+            const Duration(seconds: 1),
+            (_) => unawaited(_run.tick()),
+          )
+        : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Pizzalator',
       theme: pizzaTheme(Brightness.light),

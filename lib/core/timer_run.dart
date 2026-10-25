@@ -18,10 +18,9 @@ bool isTimed(RoutineStep step) =>
 
 enum RunPhase { ready, running, paused, ended }
 
-/// A notification to fire when a timer ends.
+/// What a timer end is called: the live notification's wording.
 class RunAlarm {
-  const RunAlarm(this.at, this.title, this.body);
-  final DateTime at;
+  const RunAlarm(this.title, this.body);
   final String title, body;
 }
 
@@ -173,15 +172,17 @@ class TimerRun {
     return r;
   }
 
-  /// Notifications for every timer end still ahead in the automatic chain.
-  List<RunAlarm> alarms(DateTime now) => [
-    for (
-      TimerRun? r = settle(now);
-      r != null && r.phaseAt(now) == RunPhase.running;
-      r = r._chained()
-    )
-      r._alarm(),
-  ];
+  /// How the end of the current step's timer is announced.
+  RunAlarm get alarm => RunAlarm(
+    step.bindsToPlan && cold
+        ? (nextStep?.bindsToPlan ?? false)
+              ? 'Into the fridge'
+              : 'Take out of fridge'
+        : step.kind == StepKind.rest
+        ? 'Rest over'
+        : '${step.name} done',
+    isLast ? 'Routine done' : 'Next: ${nextStep!.name}',
+  );
 
   Map<String, Object?> toJson() => {
     'steps': [for (final s in steps) s.toJson()],
@@ -215,18 +216,6 @@ class TimerRun {
     final restToRest = step.kind == StepKind.rest && n.kind == StepKind.rest;
     return autoStart || restToRest ? _enter(index + 1, endsAt!) : null;
   }
-
-  RunAlarm _alarm() => RunAlarm(
-    endsAt!,
-    step.bindsToPlan && cold
-        ? (nextStep?.bindsToPlan ?? false)
-              ? 'Into the fridge'
-              : 'Take out of fridge'
-        : step.kind == StepKind.rest
-        ? 'Rest over'
-        : '${step.name} done',
-    isLast ? 'Routine done' : 'Next: ${nextStep!.name}',
-  );
 
   TimerRun _copy({DateTime? endsAt, Duration? left}) => TimerRun(
     steps: steps,
